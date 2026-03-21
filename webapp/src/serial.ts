@@ -138,6 +138,12 @@ export class SerialBridge {
         }
     }
 
+    async sendLedColor(r: number, g: number, b: number) {
+        if (this.writer) {
+            await this.writer.write(`ledcolor:${r},${g},${b}\n`);
+        }
+    }
+
     async pair() {
         if (this.writer) {
             await this.writer.write("pair\n");

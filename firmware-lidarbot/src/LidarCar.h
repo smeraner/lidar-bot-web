@@ -23,6 +23,7 @@ class LidarCar {
    void CarCamera();
    void TrackControl(void);
    void LedShow(void);
+   void SetColor(byte r, byte g, byte b);
  public:
    uint8_t mapdata[180];
    uint16_t distance[360];

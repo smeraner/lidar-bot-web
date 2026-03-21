@@ -85,6 +85,10 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
  if((data_len == 4) && (!flag)) {
     lidarcar.LedShow();
  }
+
+ if((data_len == 5) && (!flag)) {
+    lidarcar.SetColor(data[0], data[1], data[2]);
+ }
   
 }
 

@@ -24,6 +24,14 @@ export function defineGenerators() {
         return `await serialBridge.sendLedShow();\n`;
     };
 
+    javascriptGenerator.forBlock['lidarbot_set_color'] = function (block: any) {
+        const hex: string = block.getFieldValue('COLOR');
+        const r = parseInt(hex.substring(1, 3), 16);
+        const g = parseInt(hex.substring(3, 5), 16);
+        const b = parseInt(hex.substring(5, 7), 16);
+        return `await serialBridge.sendLedColor(${r}, ${g}, ${b});\nawait new Promise(r => setTimeout(r, 100));\n`;
+    };
+
     javascriptGenerator.forBlock['lidarbot_get_distance'] = function (block: any) {
         const angle = block.getFieldValue('ANGLE');
         return [`lidarStore.getDistance(${angle})`, Order.ATOMIC];

@@ -18,6 +18,10 @@ export class LidarStore {
         }
         return false;
     }
+
+    getAllDistances(): number[] {
+        return [...this.distances];
+    }
 }
 
 export const lidarStore = new LidarStore();

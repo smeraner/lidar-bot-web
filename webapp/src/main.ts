@@ -5,13 +5,19 @@ import { defineBlocks } from './blockly/blocks';
 import { defineGenerators } from './blockly/generator';
 import { javascriptGenerator } from 'blockly/javascript';
 import { t, setLanguage, getLanguage, type Language } from './i18n';
+import { LidarView } from './lidarView';
 import './style.css';
 
 defineBlocks();
 defineGenerators();
 
+let lidarView: LidarView | null = null;
+
 serialBridge.onLidarData((points) => {
   lidarStore.update(points);
+  if (lidarView) {
+    lidarView.update(lidarStore.getAllDistances());
+  }
   updateUI(); // Ensure robot status dot turns green
 });
 
@@ -23,6 +29,7 @@ const toolbox = `
     </category>
     <category name="${t('lights')}" colour="290">
       <block type="lidarbot_led_show"></block>
+      <block type="lidarbot_set_color"></block>
     </category>
     <category name="${t('sensing')}" colour="160">
       <block type="lidarbot_get_distance"></block>
@@ -194,5 +201,29 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
     await execute();
   } catch (e) {
     console.error("Execution error", e);
+  }
+});
+
+// Lidar panel toggle
+const lidarToggleBtn = document.getElementById('lidarToggleBtn');
+const lidarPanel = document.getElementById('lidarPanel');
+
+lidarToggleBtn?.addEventListener('click', () => {
+  if (lidarPanel) {
+    const isHidden = lidarPanel.classList.toggle('hidden');
+    lidarToggleBtn.classList.toggle('active', !isHidden);
+    
+    // Initialize LidarView on first show
+    if (!isHidden && !lidarView) {
+      lidarView = new LidarView('lidarCanvas');
+    }
+    
+    // Resize Blockly workspace after panel toggle transition
+    setTimeout(() => {
+      Blockly.svgResize(workspace);
+      if (lidarView) {
+        lidarView.update(lidarStore.getAllDistances());
+      }
+    }, 350);
   }
 });

@@ -83,6 +83,10 @@ void LidarCar::LedShow(void){
   setLedAll(0, 0, 0); delay(100); setLedAll(255, 255, 255); delay(50);
 }
 
+void LidarCar::SetColor(byte r, byte g, byte b){
+  setLedAll(r, g, b);
+}
+
 /*!
  * \brief LidarCar::setLedColor
  * \param 

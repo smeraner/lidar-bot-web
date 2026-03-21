@@ -1,4 +1,5 @@
 import * as Blockly from 'blockly';
+import { FieldColour } from '@blockly/field-colour';
 import { t } from '../i18n';
 
 export function defineBlocks() {
@@ -26,6 +27,17 @@ export function defineBlocks() {
     Blockly.Blocks['lidarbot_led_show'] = {
         init: function () {
             this.appendDummyInput().appendField(t('led_show'));
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setColour(290);
+        }
+    };
+
+    Blockly.Blocks['lidarbot_set_color'] = {
+        init: function () {
+            this.appendDummyInput()
+                .appendField(t('set_color'))
+                .appendField(new FieldColour('#ff0000'), 'COLOR');
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(290);

@@ -107,15 +107,31 @@ header h1 {
 }
 
 @keyframes pulse-orange {
-  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
 }
 
 .controls {
@@ -201,25 +217,28 @@ main {
   box-sizing: border-box;
   background: var(--bg);
   position: relative;
+  display: flex;
+  gap: 16px;
 }
 
 #blocklyDiv {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   height: calc(100vh - var(--header-height) - 40px);
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
-  background: var(--card-bg);
+  background: #1a2744;
 }
 
 /* Customizing Blockly look */
 .blocklyMainBackground {
   stroke: none !important;
-  fill: var(--card-bg) !important;
+  fill: #1a2744 !important;
 }
 
-.blocklyToolboxDiv {
-  background-color: var(--card-bg) !important;
+.blocklyToolbox {
+  background-color: #162035 !important;
   border-right: 1px solid var(--border) !important;
   color: var(--text) !important;
 }
@@ -230,6 +249,91 @@ main {
 }
 
 .blocklyFlyoutBackground {
-  fill: var(--card-bg) !important;
-  fill-opacity: 0.8 !important;
+  fill: #1e2d4a !important;
+  fill-opacity: 0.95 !important;
+}
+
+/* Lidar Panel */
+#lidarPanel {
+  width: 340px;
+  min-width: 280px;
+  height: calc(100vh - var(--header-height) - 40px);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease,
+    padding 0.3s ease;
+}
+
+#lidarPanel.hidden {
+  width: 0;
+  min-width: 0;
+  border: none;
+  opacity: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.lidar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.lidar-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #38bdf8;
+}
+
+.lidar-canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  min-height: 0;
+}
+
+#lidarCanvas {
+  border-radius: 8px;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+#lidarToggleBtn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#lidarToggleBtn:hover {
+  border-color: var(--accent);
+  background: rgba(56, 189, 248, 0.05);
+}
+
+#lidarToggleBtn.active {
+  background: rgba(56, 189, 248, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
 }

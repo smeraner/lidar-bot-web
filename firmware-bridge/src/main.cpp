@@ -220,6 +220,19 @@ void loop() {
         uint8_t showData[4] = {0, 0, 0, 0};
         esp_now_send(lidarBotAddress, showData, 4);
         Serial.println("debug:sent_ledshow_payload_4_bytes");
+      } else if (input.startsWith("ledcolor:")) {
+        // Parse ledcolor:R,G,B
+        String rgb = input.substring(9);
+        int c1 = rgb.indexOf(',');
+        int c2 = rgb.indexOf(',', c1 + 1);
+        if (c1 > 0 && c2 > 0) {
+          uint8_t r = (uint8_t)rgb.substring(0, c1).toInt();
+          uint8_t g = (uint8_t)rgb.substring(c1 + 1, c2).toInt();
+          uint8_t b = (uint8_t)rgb.substring(c2 + 1).toInt();
+          uint8_t colorData[5] = {r, g, b, 0, 0};
+          esp_now_send(lidarBotAddress, colorData, 5);
+          Serial.printf("debug:sent_ledcolor_r%d_g%d_b%d\n", r, g, b);
+        }
       } else {
         // Check for move command: x,y,z
         int firstComma = input.indexOf(',');
