@@ -42,12 +42,13 @@ graph LR
 
 ## ✨ Key Features
 
--   **🧩 Visual Programming:** Fully customized Blockly environment with categories for **Movement**, **Lights**, **Sensing**, **Logic**, and **Math**.
--   **⚡ Real-Time Lidar Visualization:** Bridge translates Lidar data onto the Serial port for browser-side processing.
+-   **🧩 Visual Programming:** Fully customized Blockly environment with categories for **Movement**, **Lights**, **Sensing**, **Logic**, and **Math**. Includes advanced UI features like an intuitive color picker block.
+-   **⚡ Real-Time Lidar Visualization:** Bridge translates Lidar data onto the Serial port for browser-side processing. Features an interactive Lidar View with precise Pan and Zoom capabilities.
 -   **🌍 i18n Support:** Fully translated UI and Block labels for **English** and **German**.
 -   **💾 Auto-Persistence:** Your Blockly workspace is automatically saved to LocalStorage.
 -   **🚨 Emergency Stop:** Integrated emergency stop via M5StickC Button A or UI command.
 -   **🔗 Auto-Pairing:** Smart handshake protocol to connect the bridge to the robot automatically.
+
 
 ---
 
