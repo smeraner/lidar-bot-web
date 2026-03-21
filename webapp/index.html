@@ -9,10 +9,14 @@
   <body>
     <div id="app">
       <header>
-        <h1>LidarBot Control</h1>
+        <h1 data-i18n="title">LidarBot Control</h1>
         <div class="controls">
-          <button id="connectBtn" class="premium-btn">Connect LidarBot</button>
-          <button id="runBtn" class="premium-btn primary">Run Program</button>
+          <select id="languageSelect" class="premium-select">
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+          </select>
+          <button id="connectBtn" class="premium-btn" data-i18n="connect">Connect LidarBot</button>
+          <button id="runBtn" class="premium-btn primary" data-i18n="run">Run Program</button>
         </div>
       </header>
       <main>

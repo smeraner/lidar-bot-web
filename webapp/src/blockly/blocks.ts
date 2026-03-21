@@ -1,17 +1,18 @@
 import * as Blockly from 'blockly';
+import { t } from '../i18n';
 
 export function defineBlocks() {
     Blockly.Blocks['lidarbot_move'] = {
         init: function () {
             this.appendDummyInput()
-                .appendField("Move")
+                .appendField(t('move'))
                 .appendField(new Blockly.FieldDropdown([
-                    ["Forward", "FORWARD"],
-                    ["Backward", "BACKWARD"],
-                    ["Left", "LEFT"],
-                    ["Right", "RIGHT"]
+                    [t('forward'), "FORWARD"],
+                    [t('backward'), "BACKWARD"],
+                    [t('left'), "LEFT"],
+                    [t('right'), "RIGHT"]
                 ]), "DIRECTION")
-                .appendField("Speed")
+                .appendField(t('speed'))
                 .appendField(new Blockly.FieldNumber(50, 0, 100), "SPEED");
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
@@ -21,7 +22,7 @@ export function defineBlocks() {
 
     Blockly.Blocks['lidarbot_stop'] = {
         init: function () {
-            this.appendDummyInput().appendField("Stop LidarBot");
+            this.appendDummyInput().appendField(t('stop') + " LidarBot");
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(0);
