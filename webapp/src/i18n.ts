@@ -35,7 +35,12 @@ export const translations = {
         robot_connected: 'Robot Connected',
         robot_disconnected: 'Robot Disconnected',
         robot_searching: 'Robot Searching...',
-        pair: 'Pair Robot'
+        pair: 'Pair Robot',
+        stop_program: 'Stop',
+        running_program: 'Program running...',
+        program_finished: 'Program finished',
+        program_stopped: 'Program stopped',
+        program_error: 'Program error'
     },
     de: {
         title: 'LidarBot Steuerung',
@@ -70,7 +75,12 @@ export const translations = {
         robot_connected: 'Robot verbunden',
         robot_disconnected: 'Robot getrennt',
         robot_searching: 'Suche Robot...',
-        pair: 'Robot koppeln'
+        pair: 'Robot koppeln',
+        stop_program: 'Stop',
+        running_program: 'Programm läuft...',
+        program_finished: 'Programm beendet',
+        program_stopped: 'Programm gestoppt',
+        program_error: 'Programmfehler'
     }
 };
 

@@ -319,3 +319,184 @@ main {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* Danger / Stop Button */
+.premium-btn.danger {
+  background: #ef4444;
+  border-color: #ef4444;
+  animation: danger-glow 2s infinite;
+}
+
+.premium-btn.danger:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+@keyframes danger-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
+  50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+}
+
+/* Run button disabled state */
+.premium-btn.primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Execution Status Bar */
+.execution-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 40px;
+  height: 44px;
+  background: linear-gradient(135deg, rgba(129, 140, 248, 0.08), rgba(56, 189, 248, 0.06));
+  border-bottom: 1px solid rgba(129, 140, 248, 0.2);
+  backdrop-filter: blur(8px);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  z-index: 9;
+}
+
+.execution-bar.hidden {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+  opacity: 0;
+}
+
+.execution-bar.status-running {
+  background: linear-gradient(135deg, rgba(129, 140, 248, 0.1), rgba(56, 189, 248, 0.06));
+  border-bottom-color: rgba(129, 140, 248, 0.25);
+}
+
+.execution-bar.status-finished {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(52, 211, 153, 0.06));
+  border-bottom-color: rgba(16, 185, 129, 0.25);
+}
+
+.execution-bar.status-stopped {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.06));
+  border-bottom-color: rgba(245, 158, 11, 0.25);
+}
+
+.execution-bar.status-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(248, 113, 113, 0.06));
+  border-bottom-color: rgba(239, 68, 68, 0.25);
+}
+
+.exec-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.exec-icon {
+  font-size: 16px;
+  line-height: 1;
+  animation: spin-icon 1.2s linear infinite;
+}
+
+.execution-bar:not(.status-running) .exec-icon {
+  animation: none;
+}
+
+@keyframes spin-icon {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.exec-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+  white-space: nowrap;
+}
+
+.execution-bar.status-running .exec-text { color: var(--primary); }
+.execution-bar.status-finished .exec-text { color: #10b981; }
+.execution-bar.status-stopped .exec-text { color: #f59e0b; }
+.execution-bar.status-error .exec-text { color: #ef4444; }
+
+.exec-timer {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  min-width: 42px;
+}
+
+.exec-progress-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.exec-progress-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.execution-bar.status-running .exec-progress-bar {
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  animation: progress-indeterminate 1.8s ease-in-out infinite;
+  width: 100% !important;
+}
+
+.execution-bar.status-finished .exec-progress-bar {
+  background: #10b981;
+  width: 100% !important;
+  animation: none;
+}
+
+.execution-bar.status-stopped .exec-progress-bar {
+  background: #f59e0b;
+  animation: none;
+}
+
+.execution-bar.status-error .exec-progress-bar {
+  background: #ef4444;
+  width: 100% !important;
+  animation: none;
+}
+
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+.exec-stop-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.exec-stop-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  transform: scale(1.05);
+}
+
+.execution-bar:not(.status-running) .exec-stop-btn {
+  opacity: 0;
+  pointer-events: none;
+}

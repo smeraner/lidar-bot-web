@@ -13,15 +13,15 @@ export function defineGenerators() {
         if (direction === 'LEFT') x = -s;
         if (direction === 'RIGHT') x = s;
 
-        return `await serialBridge.sendCommand(${x}, ${y}, ${z});\nawait new Promise(r => setTimeout(r, ${duration}));\nawait serialBridge.sendCommand(0, 0, 0);\nawait new Promise(r => setTimeout(r, 50));\nawait serialBridge.sendCommand(0, 0, 0);\nawait new Promise(r => setTimeout(r, 100));\n`;
+        return `__checkAbort();\nawait serialBridge.sendCommand(${x}, ${y}, ${z});\nawait __sleep(${duration});\n__checkAbort();\nawait serialBridge.sendCommand(0, 0, 0);\nawait __sleep(50);\nawait serialBridge.sendCommand(0, 0, 0);\nawait __sleep(100);\n`;
     };
 
     javascriptGenerator.forBlock['lidarbot_stop'] = function () {
-        return `await serialBridge.sendCommand(0, 0, 0);\nawait new Promise(r => setTimeout(r, 50));\nawait serialBridge.sendCommand(0, 0, 0);\nawait new Promise(r => setTimeout(r, 100));\n`;
+        return `__checkAbort();\nawait serialBridge.sendCommand(0, 0, 0);\nawait __sleep(50);\nawait serialBridge.sendCommand(0, 0, 0);\nawait __sleep(100);\n`;
     };
 
     javascriptGenerator.forBlock['lidarbot_led_show'] = function () {
-        return `await serialBridge.sendLedShow();\n`;
+        return `__checkAbort();\nawait serialBridge.sendLedShow();\n`;
     };
 
     javascriptGenerator.forBlock['lidarbot_set_color'] = function (block: any) {
@@ -29,7 +29,7 @@ export function defineGenerators() {
         const r = parseInt(hex.substring(1, 3), 16);
         const g = parseInt(hex.substring(3, 5), 16);
         const b = parseInt(hex.substring(5, 7), 16);
-        return `await serialBridge.sendLedColor(${r}, ${g}, ${b});\nawait new Promise(r => setTimeout(r, 100));\n`;
+        return `__checkAbort();\nawait serialBridge.sendLedColor(${r}, ${g}, ${b});\nawait __sleep(100);\n`;
     };
 
     javascriptGenerator.forBlock['lidarbot_get_distance'] = function (block: any) {

@@ -189,6 +189,9 @@ document.getElementById('pairBtn')?.addEventListener('click', async () => {
 });
 
 document.getElementById('runBtn')?.addEventListener('click', async () => {
+  if (_isRunning) return;
+  startExecution();
+
   const code = javascriptGenerator.workspaceToCode(workspace);
   // Expose tools to the eval context
   (window as any).serialBridge = serialBridge;
@@ -197,12 +200,141 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   try {
     // Wrap in an async IIFE to support await in generated code
     const AsyncFunction = async function () { }.constructor as any;
-    const execute = new AsyncFunction(code);
-    await execute();
-  } catch (e) {
-    console.error("Execution error", e);
+    const execute = new AsyncFunction('serialBridge', 'lidarStore', '__checkAbort', '__sleep', code);
+    await execute(serialBridge, lidarStore, __checkAbort, __sleep);
+    if (!_aborted) {
+      finishExecution('finished');
+    }
+  } catch (e: any) {
+    if (e?.message === 'AbortExecution') {
+      finishExecution('stopped');
+      // Send stop command to ensure the robot halts
+      try { await serialBridge.sendCommand(0, 0, 0); } catch {}
+    } else {
+      console.error("Execution error", e);
+      finishExecution('error');
+    }
   }
 });
+
+// === Execution State Management ===
+let _isRunning = false;
+let _aborted = false;
+let _execStartTime = 0;
+let _execTimerInterval: ReturnType<typeof setInterval> | null = null;
+let _execAutoHideTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function __checkAbort() {
+  if (_aborted) throw new Error('AbortExecution');
+}
+(window as any).__checkAbort = __checkAbort;
+
+function __sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    if (_aborted) { resolve(); return; }
+    let resolved = false;
+    const done = () => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timer);
+      clearInterval(check);
+      resolve();
+    };
+    const timer = setTimeout(done, ms);
+    const check = setInterval(() => {
+      if (_aborted) done();
+    }, 50);
+  });
+}
+(window as any).__sleep = __sleep;
+
+function abortExecution() {
+  if (!_isRunning) return;
+  _aborted = true;
+}
+
+function startExecution() {
+  _isRunning = true;
+  _aborted = false;
+  _execStartTime = Date.now();
+
+  // Clear any pending auto-hide
+  if (_execAutoHideTimeout) { clearTimeout(_execAutoHideTimeout); _execAutoHideTimeout = null; }
+
+  // Show execution bar
+  const bar = document.getElementById('executionBar');
+  if (bar) {
+    bar.classList.remove('hidden', 'status-finished', 'status-stopped', 'status-error');
+    bar.classList.add('status-running');
+  }
+
+  // Update icons and text
+  const icon = document.getElementById('execIcon');
+  const text = document.getElementById('execText');
+  const timer = document.getElementById('execTimer');
+  if (icon) icon.textContent = '⏳';
+  if (text) text.textContent = t('running_program');
+  if (timer) timer.textContent = '0.0s';
+
+  // Start timer
+  _execTimerInterval = setInterval(() => {
+    if (timer) {
+      const elapsed = ((Date.now() - _execStartTime) / 1000).toFixed(1);
+      timer.textContent = `${elapsed}s`;
+    }
+  }, 100);
+
+  // Update buttons
+  const runBtn = document.getElementById('runBtn') as HTMLButtonElement;
+  const stopBtn = document.getElementById('stopBtn');
+  if (runBtn) runBtn.disabled = true;
+  if (stopBtn) stopBtn.style.display = 'inline-flex';
+
+  // Resize Blockly to account for bar height change
+  setTimeout(() => Blockly.svgResize(workspace), 400);
+}
+
+function finishExecution(status: 'finished' | 'stopped' | 'error') {
+  _isRunning = false;
+  if (_execTimerInterval) { clearInterval(_execTimerInterval); _execTimerInterval = null; }
+
+  const bar = document.getElementById('executionBar');
+  if (bar) {
+    bar.classList.remove('status-running', 'status-finished', 'status-stopped', 'status-error');
+    bar.classList.add(`status-${status}`);
+  }
+
+  const icon = document.getElementById('execIcon');
+  const text = document.getElementById('execText');
+  if (status === 'finished') {
+    if (icon) icon.textContent = '✅';
+    if (text) text.textContent = t('program_finished');
+  } else if (status === 'stopped') {
+    if (icon) icon.textContent = '⏹️';
+    if (text) text.textContent = t('program_stopped');
+  } else {
+    if (icon) icon.textContent = '❌';
+    if (text) text.textContent = t('program_error');
+  }
+
+  // Restore buttons
+  const runBtn = document.getElementById('runBtn') as HTMLButtonElement;
+  const stopBtn = document.getElementById('stopBtn');
+  if (runBtn) runBtn.disabled = false;
+  if (stopBtn) stopBtn.style.display = 'none';
+
+  // Auto-hide bar after a few seconds
+  _execAutoHideTimeout = setTimeout(() => {
+    if (bar && !_isRunning) {
+      bar.classList.add('hidden');
+      setTimeout(() => Blockly.svgResize(workspace), 400);
+    }
+  }, 4000);
+}
+
+// Stop button handlers (both header button and bar button)
+document.getElementById('stopBtn')?.addEventListener('click', () => abortExecution());
+document.getElementById('execStopBtn')?.addEventListener('click', () => abortExecution());
 
 // Lidar panel toggle
 const lidarToggleBtn = document.getElementById('lidarToggleBtn');
