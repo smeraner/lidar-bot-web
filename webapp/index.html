@@ -10,12 +10,23 @@
     <div id="app">
       <header>
         <h1 data-i18n="title">LidarBot Control</h1>
+        <div class="status-container">
+          <div id="bridgeStatus" class="status-item">
+            <span class="status-dot"></span>
+            <span data-i18n="bridge">Bridge</span>
+          </div>
+          <div id="robotStatus" class="status-item">
+            <span class="status-dot"></span>
+            <span id="robotStatusText" data-i18n="robot">Robot</span>
+          </div>
+        </div>
         <div class="controls">
           <select id="languageSelect" class="premium-select">
             <option value="en">English</option>
             <option value="de">Deutsch</option>
           </select>
-          <button id="connectBtn" class="premium-btn" data-i18n="connect">Connect LidarBot</button>
+          <button id="connectBtn" class="premium-btn" data-i18n="connect">Connect Bridge</button>
+          <button id="pairBtn" class="premium-btn" data-i18n="pair" style="display: none;">Pair Robot</button>
           <button id="runBtn" class="premium-btn primary" data-i18n="run">Run Program</button>
         </div>
       </header>

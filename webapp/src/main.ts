@@ -12,6 +12,7 @@ defineGenerators();
 
 serialBridge.onLidarData((points) => {
   lidarStore.update(points);
+  updateUI(); // Ensure robot status dot turns green
 });
 
 const toolbox = `
@@ -87,9 +88,44 @@ function updateUI() {
   const connectBtn = document.getElementById('connectBtn') as HTMLButtonElement;
   if (connectBtn) {
     if (serialBridge.isConnected) {
-      connectBtn.innerText = t('connected');
+      connectBtn.innerText = t('disconnect');
     } else {
       connectBtn.innerText = t('connect');
+    }
+  }
+
+  // Update status indicators
+  const bridgeStatus = document.getElementById('bridgeStatus');
+  if (bridgeStatus) {
+    if (serialBridge.isConnected) {
+      bridgeStatus.classList.add('connected');
+    } else {
+      bridgeStatus.classList.remove('connected');
+    }
+  }
+
+  const robotStatus = document.getElementById('robotStatus');
+  const robotStatusText = document.getElementById('robotStatusText');
+  if (robotStatus) {
+    robotStatus.classList.remove('connected', 'searching', 'disconnected');
+    const status = serialBridge.robotStatus;
+    robotStatus.classList.add(status);
+    
+    if (robotStatusText) {
+      if (status === 'connected') robotStatusText.textContent = t('robot_connected');
+      else if (status === 'searching') robotStatusText.textContent = t('robot_searching');
+      else robotStatusText.textContent = t('robot_disconnected');
+    }
+  }
+  
+  // Update visibility of Pair button
+  const pairBtn = document.getElementById('pairBtn');
+  if (pairBtn) {
+    // Show pair button if bridge is connected but robot is not connected (it might be searching or disconnected)
+    if (serialBridge.isConnected && serialBridge.robotStatus !== 'connected') {
+      pairBtn.style.display = 'inline-block';
+    } else {
+      pairBtn.style.display = 'none';
     }
   }
 
@@ -99,6 +135,10 @@ function updateUI() {
   // Reload toolbox to reflect labels
   workspace.updateToolbox(toolbox);
 }
+
+serialBridge.onRobotStatus(() => {
+  updateUI();
+});
 
 const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
 if (languageSelect) {
@@ -135,6 +175,10 @@ connectBtn?.addEventListener('click', async () => {
           connectBtn.classList.add('connected');
         }
     }
+});
+
+document.getElementById('pairBtn')?.addEventListener('click', async () => {
+    await serialBridge.pair();
 });
 
 document.getElementById('runBtn')?.addEventListener('click', async () => {

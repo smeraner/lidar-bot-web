@@ -31,6 +31,7 @@ The project is a monorepo consisting of:
 ## 🏃 Common Procedures
 Refer to the following workflows for standard tasks:
 - **[/web-testing](file:///d:/Projekte/LidarBotWeb/.agent/workflows/web-testing.md)**: Web application testing and validation.
+- **[/firmware-upload](file:///d:/Projekte/LidarBotWeb/.agent/workflows/firmware-upload.md)**: Building and flashing the ESP32 bridge.
 
 ## 🎯 Important Note
 The `webapp` communicates with the `firmware` via Web Serial. Browser support is limited to Chromium-based browsers (Chrome, Edge).

@@ -28,7 +28,13 @@ export const translations = {
         is_obstacle: 'is obstacle between',
         and: 'and',
         threshold: 'threshold',
-        distance: 'distance'
+        distance: 'distance',
+        bridge: 'Bridge',
+        robot: 'Robot',
+        robot_connected: 'Robot Connected',
+        robot_disconnected: 'Robot Disconnected',
+        robot_searching: 'Robot Searching...',
+        pair: 'Pair Robot'
     },
     de: {
         title: 'LidarBot Steuerung',
@@ -56,7 +62,13 @@ export const translations = {
         is_obstacle: 'Hindernis zwischen',
         and: 'und',
         threshold: 'Schwellenwert',
-        distance: 'Abstand'
+        distance: 'Abstand',
+        bridge: 'Bridge',
+        robot: 'Robot',
+        robot_connected: 'Robot verbunden',
+        robot_disconnected: 'Robot getrennt',
+        robot_searching: 'Suche Robot...',
+        pair: 'Robot koppeln'
     }
 };
 

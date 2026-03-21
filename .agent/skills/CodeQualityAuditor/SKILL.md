@@ -31,6 +31,7 @@ This skill provides guidelines and audits for maintaining and improving the Lida
 ## 🧪 Workflow Awareness
 Before concluding any feature implementation, refer to the following workflows in `.agent/workflows/`:
 - **[/web-testing](file:///d:/Projekte/LidarBotWeb/.agent/workflows/web-testing.md)**: Steps for validating the Web Serial connection, Blockly workspace, and code generation.
+- **[/firmware-upload](file:///d:/Projekte/LidarBotWeb/.agent/workflows/firmware-upload.md)**: Steps for building, flashing, and verifying the ESP32 bridge firmware.
 
 ## 🔍 Pre-Submission Checklist
 - [ ] Are all serial commands terminated with `\n`?

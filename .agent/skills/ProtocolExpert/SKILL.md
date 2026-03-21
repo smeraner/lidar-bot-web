@@ -37,6 +37,7 @@ Data from the bridge is prefixed with a type identifier.
 | Type | Format | Description |
 | :--- | :--- | :--- |
 | **Lidar** | `lidar:a1,d1,a2,d2,...,a45,d45\n` | 45 Lidar points (Angle, Distance) per line. |
+| **Status** | `status:robot_connected\n` or `status:robot_disconnected\n` | Reports LidarBot connection status. |
 
 ---
 

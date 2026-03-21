@@ -2,11 +2,17 @@ export class SerialBridge {
     private port: SerialPort | null = null;
     private writer: WritableStreamDefaultWriter<string> | null = null;
     private _isConnected: boolean = false;
+    private _robotStatus: 'connected' | 'disconnected' | 'searching' = 'disconnected';
     private reader: ReadableStreamDefaultReader<string> | null = null;
     private lidarCallback: ((points: { angle: number, distance: number }[]) => void) | null = null;
+    private robotStatusCallback: ((status: 'connected' | 'disconnected' | 'searching') => void) | null = null;
 
     get isConnected() {
         return this._isConnected;
+    }
+
+    get robotStatus() {
+        return this._robotStatus;
     }
 
     async connect() {
@@ -29,6 +35,9 @@ export class SerialBridge {
             
             this._isConnected = true;
             this.readLoop();
+            
+            // Request initial status
+            await this.requestStatus();
             
             console.log("Connected to ESP32 Bridge");
         } catch (e) {
@@ -69,6 +78,24 @@ export class SerialBridge {
             if (this.lidarCallback) {
                 this.lidarCallback(points);
             }
+            
+            // If we receive lidar data, the robot is definitely connected
+            if (this._robotStatus !== 'connected') {
+                this._robotStatus = 'connected';
+                if (this.robotStatusCallback) this.robotStatusCallback('connected');
+            }
+        } else if (line.startsWith("status:")) {
+            const status = line.substring(7);
+            if (status === "robot_connected") {
+                this._robotStatus = 'connected';
+                if (this.robotStatusCallback) this.robotStatusCallback('connected');
+            } else if (status === "robot_disconnected") {
+                this._robotStatus = 'disconnected';
+                if (this.robotStatusCallback) this.robotStatusCallback('disconnected');
+            } else if (status === "robot_searching") {
+                this._robotStatus = 'searching';
+                if (this.robotStatusCallback) this.robotStatusCallback('searching');
+            }
         }
     }
 
@@ -76,15 +103,21 @@ export class SerialBridge {
         this.lidarCallback = callback;
     }
 
+    onRobotStatus(callback: (status: 'connected' | 'disconnected' | 'searching') => void) {
+        this.robotStatusCallback = callback;
+    }
+
     async disconnect() {
         if (this.port) {
             this._isConnected = false;
+            this._robotStatus = 'disconnected';
             if (this.reader) await this.reader.cancel();
             await this.port.close();
             this.port = null;
             this.writer = null;
             this.reader = null;
             console.log("Disconnected from Serial Bridge");
+            if (this.robotStatusCallback) this.robotStatusCallback('disconnected');
         }
     }
 
@@ -102,6 +135,18 @@ export class SerialBridge {
             await this.writer.write("ledshow\n");
         }
     }
+
+    async pair() {
+        if (this.writer) {
+            await this.writer.write("pair\n");
+        }
+    }
+
+    async requestStatus() {
+        if (this.writer) {
+            await this.writer.write("status?\n");
+        }
+    }
 }
 
-export const serialBridge = new SerialBridge();
+export const serialBridge = new SerialBridge();
