@@ -1,0 +1,139 @@
+:root {
+  --text: #ffffff;
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --border: #334155;
+  --accent: #38bdf8;
+  --accent-hover: #0ea5e9;
+  --primary: #818cf8;
+  --primary-hover: #6366f1;
+  --header-height: 80px;
+
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+header {
+  height: var(--header-height);
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 10;
+}
+
+header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(to right, var(--accent), var(--primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.controls {
+  display: flex;
+  gap: 16px;
+}
+
+.premium-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.premium-btn:hover {
+  background: var(--card-bg);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.premium-btn.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.premium-btn.primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  box-shadow: 0 0 15px rgba(129, 140, 248, 0.4);
+}
+
+.premium-btn.connected {
+  background: #10b981;
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.premium-btn.connected:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+main {
+  flex-grow: 1;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  background: var(--bg);
+  position: relative;
+}
+
+#blocklyDiv {
+  width: 100%;
+  height: calc(100vh - var(--header-height) - 40px);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+}
+
+/* Customizing Blockly look */
+.blocklyMainBackground {
+  stroke: none !important;
+  fill: var(--card-bg) !important;
+}
+
+.blocklyToolboxDiv {
+  background-color: var(--card-bg) !important;
+  border-right: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+.blocklyTreeLabel {
+  color: var(--text) !important;
+  font-family: inherit !important;
+}
+
+.blocklyFlyoutBackground {
+  fill: var(--card-bg) !important;
+  fill-opacity: 0.8 !important;
+}
