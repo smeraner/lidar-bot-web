@@ -13,11 +13,11 @@ export function defineGenerators() {
         if (direction === 'LEFT') x = -s;
         if (direction === 'RIGHT') x = s;
 
-        return `await serialBridge.sendCommand(${x}, ${y}, ${z});\nawait new Promise(r => setTimeout(r, ${duration}));\nawait serialBridge.sendCommand(0, 0, 0);\n`;
+        return `await serialBridge.sendCommand(${x}, ${y}, ${z});\nawait new Promise(r => setTimeout(r, ${duration}));\nawait serialBridge.sendCommand(0, 0, 0);\nawait new Promise(r => setTimeout(r, 50));\nawait serialBridge.sendCommand(0, 0, 0);\nawait new Promise(r => setTimeout(r, 100));\n`;
     };
 
     javascriptGenerator.forBlock['lidarbot_stop'] = function () {
-        return `await serialBridge.sendCommand(0, 0, 0);\n`;
+        return `await serialBridge.sendCommand(0, 0, 0);\nawait new Promise(r => setTimeout(r, 50));\nawait serialBridge.sendCommand(0, 0, 0);\nawait new Promise(r => setTimeout(r, 100));\n`;
     };
 
     javascriptGenerator.forBlock['lidarbot_led_show'] = function () {

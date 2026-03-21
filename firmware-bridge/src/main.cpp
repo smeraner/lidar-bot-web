@@ -216,9 +216,14 @@ void loop() {
       Serial.println(lastBotConnected ? "robot_connected" : "robot_disconnected");
     } else if (input.length() > 0) {
       
-      // Check for move command: x,y,z
-      int firstComma = input.indexOf(',');
-      int secondComma = input.indexOf(',', firstComma + 1);
+      if (input == "ledshow") {
+        uint8_t showData[4] = {0, 0, 0, 0};
+        esp_now_send(lidarBotAddress, showData, 4);
+        Serial.println("debug:sent_ledshow_payload_4_bytes");
+      } else {
+        // Check for move command: x,y,z
+        int firstComma = input.indexOf(',');
+        int secondComma = input.indexOf(',', firstComma + 1);
       
       if (firstComma > 0 && secondComma > 0) {
         int x = input.substring(0, firstComma).toInt();
@@ -237,6 +242,7 @@ void loop() {
         
         esp_now_send(lidarBotAddress, moveDataArray, 3);
       }
+    }
     }
   }
 }
