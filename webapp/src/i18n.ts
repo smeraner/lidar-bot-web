@@ -17,6 +17,18 @@ export const translations = {
         speed: 'speed',
         duration: 'duration',
         ms: 'ms',
+        movement: 'Movement',
+        lights: 'Lights',
+        sensing: 'Sensing',
+        logic: 'Logic',
+        loops: 'Loops',
+        math: 'Math',
+        led_show: 'Flash Lights (Disco)',
+        dist_at_angle: 'distance at angle',
+        is_obstacle: 'is obstacle between',
+        and: 'and',
+        threshold: 'threshold',
+        distance: 'distance'
     },
     de: {
         title: 'LidarBot Steuerung',
@@ -33,6 +45,18 @@ export const translations = {
         speed: 'Geschwindigkeit',
         duration: 'Dauer',
         ms: 'ms',
+        movement: 'Bewegung',
+        lights: 'Lichter',
+        sensing: 'Sensorik',
+        logic: 'Logik',
+        loops: 'Schleifen',
+        math: 'Mathe',
+        led_show: 'Lichter blinken (Disco)',
+        dist_at_angle: 'Abstand bei Winkel',
+        is_obstacle: 'Hindernis zwischen',
+        and: 'und',
+        threshold: 'Schwellenwert',
+        distance: 'Abstand'
     }
 };
 

@@ -1,5 +1,6 @@
 import * as Blockly from 'blockly';
 import { serialBridge } from './serial';
+import { lidarStore } from './lidarStore';
 import { defineBlocks } from './blockly/blocks';
 import { defineGenerators } from './blockly/generator';
 import { javascriptGenerator } from 'blockly/javascript';
@@ -9,10 +10,43 @@ import './style.css';
 defineBlocks();
 defineGenerators();
 
+serialBridge.onLidarData((points) => {
+  lidarStore.update(points);
+});
+
 const toolbox = `
-  <xml>
-    <block type="lidarbot_move"></block>
-    <block type="lidarbot_stop"></block>
+  <xml xmlns="https://developers.google.com/blockly/xml">
+    <category name="${t('movement')}" colour="210">
+      <block type="lidarbot_move"></block>
+      <block type="lidarbot_stop"></block>
+    </category>
+    <category name="${t('lights')}" colour="290">
+      <block type="lidarbot_led_show"></block>
+    </category>
+    <category name="${t('sensing')}" colour="160">
+      <block type="lidarbot_get_distance"></block>
+      <block type="lidarbot_is_obstacle"></block>
+    </category>
+    <category name="${t('logic')}" colour="210">
+      <block type="controls_if"></block>
+      <block type="logic_compare"></block>
+      <block type="logic_operation"></block>
+      <block type="logic_boolean"></block>
+    </category>
+    <category name="${t('loops')}" colour="120">
+      <block type="controls_repeat_ext">
+        <value name="TIMES">
+          <shadow type="math_number">
+            <field name="NUM">10</field>
+          </shadow>
+        </value>
+      </block>
+      <block type="controls_whileUntil"></block>
+    </category>
+    <category name="${t('math')}" colour="230">
+      <block type="math_number"></block>
+      <block type="math_arithmetic"></block>
+    </category>
   </xml>
 `;
 
@@ -105,8 +139,9 @@ connectBtn?.addEventListener('click', async () => {
 
 document.getElementById('runBtn')?.addEventListener('click', async () => {
   const code = javascriptGenerator.workspaceToCode(workspace);
-  // Expose serialBridge to the eval context
+  // Expose tools to the eval context
   (window as any).serialBridge = serialBridge;
+  (window as any).lidarStore = lidarStore;
 
   try {
     // Wrap in an async IIFE to support await in generated code
