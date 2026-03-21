@@ -5,7 +5,7 @@ description: Expert guidance on developing, building, and flashing the ESP32 bri
 
 # FirmwareDeveloper Skill
 
-This skill provides the necessary technical details and workflows for developing the **ESP32 Bridge Firmware** located in the `firmware/` directory.
+This skill provides the necessary technical details and workflows for developing the **ESP32 Bridge Firmware** located in the `firmware-bridge/` directory.
 
 ## 🛠 Development Environment
 

@@ -1,0 +1,16 @@
+{
+    "name": "lidarbotweb",
+    "version": "1.0.0",
+    "description": "LidarBotWeb",
+    "main": "index.js",
+    "scripts": {
+        "flash-bridge": "cd firmware-bridge && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe run -t upload",
+        "monitor-bridge": "cd firmware-bridge && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe device monitor",
+        "flash-bot": "cd firmware-lidarbot && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe run -t upload",
+        "monitor-bot": "cd firmware-lidarbot && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe device monitor",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}

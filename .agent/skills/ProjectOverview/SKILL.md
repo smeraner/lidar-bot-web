@@ -9,11 +9,13 @@ This skill provides a high-level overview of the LidarBotWeb project, enabling a
 
 ## 🗼 Structure
 The project is a monorepo consisting of:
-- `firmware/`: ESP32 bridge code (Arduino/C++).
+- `firmware-bridge/`: ESP32 bridge code (Arduino/C++).
+- `firmware-lidarbot/`: ESP32 LidarBot code (Arduino/C++).
 - `webapp/`: Vite-powered Single Page Application (TypeScript).
 
 ### Key Files
-- `firmware/src/main.cpp`: ESP32 bridge logic (Serial to ESP-NOW).
+- `firmware-bridge/src/main.cpp`: ESP32 bridge logic (Serial to ESP-NOW).
+- `firmware-lidarbot/src/main.cpp`: ESP32 LidarBot logic (ESP-NOW to Motor/Lidar).
 - `webapp/src/main.ts`: Web app entry point, initializes Blockly and UI.
 - `webapp/src/serial.ts`: Web Serial API wrapper for communication.
 - `webapp/src/blockly/`: Contains custom block definitions and code generators.

@@ -9,9 +9,12 @@ webapp/node_modules/
 webapp/dist/
 
 # Firmware specific
-firmware/.pio/
-firmware/.vscode/
-firmware/lib/
+firmware-bridge/.pio/
+firmware-bridge/.vscode/
+firmware-bridge/lib/
+firmware-lidarbot/.pio/
+firmware-lidarbot/.vscode/
+firmware-lidarbot/lib/
 
 # Environment Variables
 .env

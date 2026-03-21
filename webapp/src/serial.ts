@@ -96,6 +96,8 @@ export class SerialBridge {
                 this._robotStatus = 'searching';
                 if (this.robotStatusCallback) this.robotStatusCallback('searching');
             }
+        } else if (line.startsWith("debug:")) {
+            console.log("Bridge Debug:", line.substring(6));
         }
     }
 

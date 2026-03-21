@@ -1,0 +1,54 @@
+﻿Processing m5stack-core-esp32 (platform: espressif32; board: m5stack-core-esp32; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/m5stack-core-esp32.html
+PLATFORM: Espressif 32 (6.4.0) > M5Stack Core ESP32
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20011.230801 (2.0.11) 
+ - tool-esptoolpy @ 1.40501.0 (4.5.1) 
+ - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 34 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- M5Stack @ 0.4.6
+|-- WebServer @ 2.0.0
+|-- Wire @ 2.0.0
+|-- WiFi @ 2.0.0
+|-- ESPmDNS @ 2.0.0
+|-- Preferences @ 2.0.0
+Building in release mode
+Compiling .pio\build\m5stack-core-esp32\src\main.cpp.o
+Archiving .pio\build\m5stack-core-esp32\lib009\libFS.a
+Archiving .pio\build\m5stack-core-esp32\libfde\libWiFi.a
+Compiling .pio\build\m5stack-core-esp32\libed9\WiFiClientSecure\esp_crt_bundle.c.o
+Compiling .pio\build\m5stack-core-esp32\libed9\WiFiClientSecure\ssl_client.cpp.o
+Compiling .pio\build\m5stack-core-esp32\libec1\HTTPClient\HTTPClient.cpp.o
+Compiling .pio\build\m5stack-core-esp32\lib9b2\SPI\SPI.cpp.o
+pio.exe : src/main.cpp: In function 'void setup()':
+In Zeile:1 Zeichen:1
++ & "C:\Users\$env:USERNAME\.platformio\penv\Scripts\pio.exe" run > bui ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (src/main.cpp: I...'void setup()'::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+src/main.cpp:40:28: error: 'OnDataRecv' was not declared in this scope
+   esp_now_register_recv_cb(OnDataRecv);
+                            ^~~~~~~~~~
+src/main.cpp:41:28: error: 'OnDataSent' was not declared in this scope
+   esp_now_register_send_cb(OnDataSent);
+                            ^~~~~~~~~~
+Compiling .pio\build\m5stack-core-esp32\libc03\SD\SD.cpp.o
+Compiling .pio\build\m5stack-core-esp32\libc03\SD\sd_diskio.cpp.o
+Compiling .pio\build\m5stack-core-esp32\libc03\SD\sd_diskio_crc.c.o
+Compiling .pio\build\m5stack-core-esp32\lib6f3\Wire\Wire.cpp.o
+Compiling .pio\build\m5stack-core-esp32\lib66b\SPIFFS\SPIFFS.cpp.o
+Compiling .pio\build\m5stack-core-esp32\liba5f\M5Stack\Fonts\Font16.c.o
+Compiling .pio\build\m5stack-core-esp32\liba5f\M5Stack\Fonts\Font32rle.c.o
+Compiling .pio\build\m5stack-core-esp32\liba5f\M5Stack\Fonts\Font64rle.c.o
+Compiling .pio\build\m5stack-core-esp32\liba5f\M5Stack\Fonts\Font72rle.c.o
+*** [.pio\build\m5stack-core-esp32\src\main.cpp.o] Error 1
+========================== [FAILED] Took 3.40 seconds ==========================
