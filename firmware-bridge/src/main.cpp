@@ -28,10 +28,24 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   lastRecvTime = millis();
   
+  // Save the bot's MAC address if it's new
+  bool isNewMac = false;
+  for (int i=0; i<6; i++) {
+    if (lidarBotAddress[i] != mac[i]) isNewMac = true;
+  }
+  if (isNewMac) {
+    memcpy(lidarBotAddress, mac, 6);
+    if (esp_now_is_peer_exist(lidarBotAddress)) {
+        esp_now_del_peer(lidarBotAddress);
+    }
+    memcpy(peerInfo.peer_addr, lidarBotAddress, 6);
+    peerInfo.channel = 1;
+    peerInfo.encrypt = false;
+    esp_now_add_peer(&peerInfo);
+  }
+
   // 1. Bot is broadcasting its MAC (Step 1 of Handshake)
   if (len == 6) {
-    memcpy(lidarBotAddress, incomingData, 6);
-    
     // Wait for manual pair trigger from the UI to actually send the handshake.
     // LidarBot_RemoteController uses delay(100) and loops 6 times; we do this
     // from the main loop so we don't stall the OnDataRecv callback task.
@@ -151,6 +165,17 @@ void loop() {
     }
   }
 
+  // Auto-Pairing Loop
+  static unsigned long lastAutoPairTime = 0;
+  if (!botConnected && (millis() - lastAutoPairTime > 3000)) {
+    lastAutoPairTime = millis();
+    uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    uint8_t handshake[7];
+    esp_read_mac(handshake, ESP_MAC_WIFI_STA);
+    handshake[6] = 0;
+    esp_now_send(broadcastMac, handshake, 7);
+  }
+
   // Emergency Stop via Physical Button
   if (M5.BtnA.wasPressed()) {
     uint8_t stopData[3] = {0, 0, 0};
@@ -174,34 +199,18 @@ void loop() {
     M5.Lcd.println(input);
 
     if (input == "pair") {
-      // Replicate the original remote exactly: send the 7-byte handshake 6 times with 100ms delays
+      // Send the 7-byte handshake via broadcast 6 times with 100ms delays
       uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-      bool hasMac = false;
-      for(int i=0; i<6; i++) {
-        if(lidarBotAddress[i] != 0xFF) hasMac = true;
+      
+      uint8_t handshake[7];
+      esp_read_mac(handshake, ESP_MAC_WIFI_STA);
+      handshake[6] = 0;
+      
+      for (int i = 0; i < 6; i++) {
+        esp_now_send(broadcastMac, handshake, 7);
+        delay(100);
       }
-
-      if (hasMac) {
-        if (esp_now_is_peer_exist(lidarBotAddress)) {
-            esp_now_del_peer(lidarBotAddress);
-        }
-        memcpy(peerInfo.peer_addr, lidarBotAddress, 6);
-        peerInfo.channel = 1;
-        peerInfo.encrypt = false;
-        esp_now_add_peer(&peerInfo);
-
-        uint8_t handshake[7];
-        esp_read_mac(handshake, ESP_MAC_WIFI_STA);
-        handshake[6] = 0;
-        
-        for (int i = 0; i < 6; i++) {
-          esp_now_send(lidarBotAddress, handshake, 7);
-          delay(100);
-        }
-        Serial.println("debug:sent_pair_handshake_6_times");
-      } else {
-        Serial.println("debug:no_bot_mac_received_yet");
-      }
+      Serial.println("debug:sent_pair_handshake_broadcast_6_times");
     } else if (input == "status?") {
       Serial.print("status:");
       Serial.println(lastBotConnected ? "robot_connected" : "robot_disconnected");

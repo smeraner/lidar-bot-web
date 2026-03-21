@@ -180,37 +180,30 @@ int8_t Espnow::OnRemotRecv(const uint8_t *mac_addr, const uint8_t *data, int dat
     }
 int8_t Espnow::OnBotRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 {
-  //Serial.print("connectflag = ");Serial.println(connectflag);
-  if ((data_len == 7) && (!connectflag))
+  if (data_len == 7)
   {
-    connectflag = true;
-    int i = 0;
-    for (i = 0; i < connect_num; i++)
-    {
-      int j = 0;
-      for (j = 0; j < 6; j++)
-      {
-        if (connect_addr[i][j] != mac_addr[j])
-        {
-          break;
-        }
-      }
-      //Serial.printf("j = %d",j);
-      if (j == 6)
-      {
-        break;
-      }
+    // Auto Pair with sender
+    for (int i = 0; i < 6; i++) {
+        peer_addr[i] = mac_addr[i];
+        slave.peer_addr[i] = mac_addr[i];
     }
-    if (i == connect_num)
-    {
-      for (int i = 0; i < 6; i++)
-      {
-        connect_addr[connect_num][i] = mac_addr[i];
-      }
-      connect_num++;
+    
+    slave.channel = CHANNEL;
+    if (esp_now_is_peer_exist(slave.peer_addr)) {
+       esp_now_del_peer(slave.peer_addr);
     }
+    esp_now_add_peer(&slave);
+    
+    char macStr[18];
+    snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x", peer_addr[0], peer_addr[1], peer_addr[2], peer_addr[3], peer_addr[4], peer_addr[5]);
+    preferences.putString("mac_addr", String(macStr));
+    
+    // Send ACK back
+    uint8_t ack[4] = {0x41, 0x43, 0x4B};
+    esp_now_send(slave.peer_addr, ack, sizeof(ack));
+    return 1;
   }
-  //if (connect_num > 20) connect_num = 0;
+
 
   int mac_comp = 0;
   for(mac_comp = 0; mac_comp < 6; mac_comp++){
