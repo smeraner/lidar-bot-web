@@ -46,5 +46,8 @@ const code = `
 ```
 This approach prevents flooding the serial buffer and allows timed movements.
 
+## 🧱 Protocol Specifications
+For a deep dive into the byte-level structure and serial commands, refer to the [**ProtocolExpert skill**](file:///d:/Projekte/LidarBotWeb/.agent/skills/ProtocolExpert/SKILL.md).
+
 ## 🧪 Testing and Verification
 For end-to-end testing of this architecture, refer to the [**web-testing workflow**](file:///d:/Projekte/LidarBotWeb/.agent/workflows/web-testing.md).
