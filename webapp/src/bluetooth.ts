@@ -81,10 +81,11 @@ export class BluetoothBridge {
             const data = line.substring(6).split(',');
             const points: { angle: number, distance: number }[] = [];
             for (let i = 0; i < data.length; i += 2) {
-                points.push({
-                    angle: parseInt(data[i]),
-                    distance: parseInt(data[i + 1])
-                });
+                const angle = parseInt(data[i]);
+                const distance = parseInt(data[i + 1]);
+                if (!isNaN(angle) && !isNaN(distance)) {
+                    points.push({ angle, distance });
+                }
             }
             if (this.lidarCallback) {
                 this.lidarCallback(points);
@@ -143,19 +144,32 @@ export class BluetoothBridge {
         if (this.robotStatusCallback) this.robotStatusCallback('disconnected');
     }
 
+    private writeQueue: string[] = [];
+    private isWriting = false;
+
     private async bleWrite(data: string) {
-        if (!this.rxChar) return;
-        const bytes = this.encoder.encode(data);
-        // Chunk writes to respect BLE MTU (max ~20 bytes default, negotiated up)
-        const CHUNK = 20;
-        for (let i = 0; i < bytes.length; i += CHUNK) {
-            const slice = bytes.slice(i, i + CHUNK);
-            await this.rxChar.writeValueWithoutResponse(slice);
+        this.writeQueue.push(data);
+        if (this.isWriting) return;
+        this.isWriting = true;
+        try {
+            while (this.writeQueue.length > 0) {
+                const currentData = this.writeQueue.shift()!;
+                if (!this.rxChar) continue;
+                const bytes = this.encoder.encode(currentData);
+                const CHUNK = 20;
+                for (let i = 0; i < bytes.length; i += CHUNK) {
+                    const slice = bytes.slice(i, i + CHUNK);
+                    await this.rxChar.writeValueWithoutResponse(slice);
+                }
+            }
+        } finally {
+            this.isWriting = false;
         }
     }
 
-    async sendCommand(x: number, y: number, z: number) {
-        await this.bleWrite(`${x},${y},${z}\n`);
+    async sendCommand(x: number, y: number, z: number, duration: number = 0) {
+        const command = duration > 0 ? `${x},${y},${z},${duration}\n` : `${x},${y},${z}\n`;
+        await this.bleWrite(command);
     }
 
     async sendLedShow() {

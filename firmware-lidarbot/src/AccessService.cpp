@@ -163,22 +163,22 @@ void AccessService::handleRoot() {
     <style>\
         * { margin: 0; padding: 0; box-sizing: border-box; }\
         html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: black; }\
-        \#bg { position: absolute; width: 100vw; z-index: 1; display: block; top: 0; bottom: 0; margin: auto; }\
+        #bg { position: absolute; width: 100vw; z-index: 1; display: block; top: 0; bottom: 0; margin: auto; }\
         .wrap-btn { position: absolute; width: 100vw; height: 100vh; bottom: 0; left: 0; z-index: 2; }\
-        .wrap-btn > button { -webkit-user-select: none; outline: none; border: none; width: 80px; height: 80px; border-radius: 80px; font-size: 30px; line-height: 80px; background-color: \#ccc; }\
-        \#forward, #backward, #left, #right, #shift, #stop, #leftfront, #leftrear, #rightfront, #rightrear, #accelerate, #reduce { position: absolute; }\
-        \#forward { top: 10px; left: 90px; }\
-        \#backward { top: 150px; left: 90px; }\
-        \#left { top: 80px; left: 10px; }\
-        \#right { top: 80px; left: 170px; }\
-        \#shift { bottom: 10px; left: 50px; width: 120px; height: 120px; border-radius: 120px; font-size: 32px; transform: rotate(90deg); font-family: Arial; }\
-        \#stop {top: 90px; left: 100px; width: 60px; height: 60px;}\
-        \#leftfront {top: 18px; left: 20px; width: 60px; height: 60px;transform: rotate(-40deg);}\
-        \#leftrear {top: 162px; left: 20px; width: 60px; height: 60px;transform: rotate(-40deg);}\
-        \#rightfront {top: 18px; left: 182px; width: 60px; height: 60px;transform: rotate(-40deg);}\
-        \#rightrear {top: 162px; left: 182px; width: 60px; height: 60px;transform: rotate(-40deg);}\
-        \#accelerate {bottom: 220px; left: 20px; width: 70px; height:70px;transform: rotate(90deg);}\
-        \#reduce {bottom: 140px; left: 40px; width: 70px; height: 70px;transform: rotate(90deg);}\
+        .wrap-btn > button { -webkit-user-select: none; outline: none; border: none; width: 80px; height: 80px; border-radius: 80px; font-size: 30px; line-height: 80px; background-color: #ccc; }\
+        #forward, #backward, #left, #right, #shift, #stop, #leftfront, #leftrear, #rightfront, #rightrear, #accelerate, #reduce { position: absolute; }\
+        #forward { top: 10px; left: 90px; }\
+        #backward { top: 150px; left: 90px; }\
+        #left { top: 80px; left: 10px; }\
+        #right { top: 80px; left: 170px; }\
+        #shift { bottom: 10px; left: 50px; width: 120px; height: 120px; border-radius: 120px; font-size: 32px; transform: rotate(90deg); font-family: Arial; }\
+        #stop {top: 90px; left: 100px; width: 60px; height: 60px;}\
+        #leftfront {top: 18px; left: 20px; width: 60px; height: 60px;transform: rotate(-40deg);}\
+        #leftrear {top: 162px; left: 20px; width: 60px; height: 60px;transform: rotate(-40deg);}\
+        #rightfront {top: 18px; left: 182px; width: 60px; height: 60px;transform: rotate(-40deg);}\
+        #rightrear {top: 162px; left: 182px; width: 60px; height: 60px;transform: rotate(-40deg);}\
+        #accelerate {bottom: 220px; left: 20px; width: 70px; height:70px;transform: rotate(90deg);}\
+        #reduce {bottom: 140px; left: 40px; width: 70px; height: 70px;transform: rotate(90deg);}\
     </style>\
     <title>M5STACK LidarBot</title>\
   </head>\

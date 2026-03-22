@@ -79,7 +79,14 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
   }
   
  if((data_len == 3) && (!flag)) {
-    lidarcar.ControlWheel(data[0], data[1], data[2]);
+    Serial.printf("debug:bot_move_3b x=%d y=%d z=%d\n", (int8_t)data[0], (int8_t)data[1], data[2]);
+    lidarcar.ControlWheel(data[0], data[1], data[2], 0);
+ }
+
+ if((data_len == 6) && (!flag)) {
+    uint16_t duration = (data[3] << 8) | data[4];
+    Serial.printf("debug:bot_move_6b x=%d y=%d z=%d dur=%d\n", (int8_t)data[0], (int8_t)data[1], data[2], duration);
+    lidarcar.ControlWheel(data[0], data[1], data[2], duration);
  }
 
  if((data_len == 4) && (!flag)) {
@@ -96,6 +103,7 @@ void loop()
 {
   espnow.BotConnectUpdate();
   lidarcar.MapDisplay();
+  lidarcar.Update();
   //lidarcar.ControlMode();
   
   if(digitalRead(37) == LOW){

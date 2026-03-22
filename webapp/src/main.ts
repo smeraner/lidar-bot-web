@@ -8,6 +8,7 @@ import { defineGenerators } from './blockly/generator';
 import { javascriptGenerator } from 'blockly/javascript';
 import { t, setLanguage, getLanguage, type Language } from './i18n';
 import { LidarView } from './lidarView';
+import ExecutorWorker from './executor.worker?worker';
 import './style.css';
 
 defineBlocks();
@@ -25,42 +26,34 @@ let _execStartTime = 0;
 let _execTimerInterval: ReturnType<typeof setInterval> | null = null;
 let _execAutoHideTimeout: ReturnType<typeof setTimeout> | null = null;
 
+let worker: Worker | null = null;
+let lidarView: LidarView | null = null;
+
+const handleLidarData = (points: { angle: number, distance: number }[]) => {
+  lidarStore.update(points);
+  if (lidarView) {
+    lidarView.update(lidarStore.getAllDistances());
+  }
+  if (worker) {
+    worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
+  }
+  updateUI();
+};
+
+const handleRobotStatus = () => {
+  updateUI();
+};
+
 function setActiveBridge(bridge: IBridgeTransport) {
   activeBridge = bridge;
   (window as any).serialBridge = bridge;
-
-  // Re-register callbacks on the new transport
-  bridge.onLidarData((points) => {
-    lidarStore.update(points);
-    if (lidarView) {
-      lidarView.update(lidarStore.getAllDistances());
-    }
-    updateUI();
-  });
-
-  bridge.onRobotStatus(() => {
-    updateUI();
-  });
+  updateUI();
 }
 
-let lidarView: LidarView | null = null;
-
-// Register callbacks on initial bridge
-serialBridge.onLidarData((points) => {
-  lidarStore.update(points);
-  if (lidarView) {
-    lidarView.update(lidarStore.getAllDistances());
-  }
-  updateUI();
-});
-
-bluetoothBridge.onLidarData((points) => {
-  lidarStore.update(points);
-  if (lidarView) {
-    lidarView.update(lidarStore.getAllDistances());
-  }
-  updateUI();
-});
+serialBridge.onLidarData(handleLidarData);
+bluetoothBridge.onLidarData(handleLidarData);
+serialBridge.onRobotStatus(handleRobotStatus);
+bluetoothBridge.onRobotStatus(handleRobotStatus);
 
 const toolbox = `
   <xml xmlns="https://developers.google.com/blockly/xml">
@@ -216,14 +209,6 @@ function updateUI() {
   workspace.updateToolbox(toolbox);
 }
 
-serialBridge.onRobotStatus(() => {
-  updateUI();
-});
-
-bluetoothBridge.onRobotStatus(() => {
-  updateUI();
-});
-
 const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
 if (languageSelect) {
   languageSelect.value = getLanguage();
@@ -319,59 +304,42 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   startExecution();
 
   const code = javascriptGenerator.workspaceToCode(workspace);
-  // Expose tools to the eval context
-  (window as any).serialBridge = activeBridge;
-  (window as any).lidarStore = lidarStore;
-
-  try {
-    // Wrap in an async IIFE to support await in generated code
-    const AsyncFunction = async function () { }.constructor as any;
-    const execute = new AsyncFunction('serialBridge', 'lidarStore', '__checkAbort', '__sleep', code);
-    await execute(activeBridge, lidarStore, __checkAbort, __sleep);
-    if (!_aborted) {
-      finishExecution('finished');
-    }
-  } catch (e: any) {
-    if (e?.message === 'AbortExecution') {
-      finishExecution('stopped');
-      // Send stop command to ensure the robot halts
-      try { await activeBridge.sendCommand(0, 0, 0); } catch {}
-    } else {
-      console.error("Execution error", e);
-      finishExecution('error');
-    }
-  }
+  
+  if (worker) worker.terminate();
+  worker = new ExecutorWorker();
+  
+  worker.onmessage = async (e) => {
+      const msg = e.data;
+      if (msg.type === 'sendCommand') {
+          await activeBridge.sendCommand(...msg.args);
+      } else if (msg.type === 'sendLedShow') {
+          await activeBridge.sendLedShow();
+      } else if (msg.type === 'sendLedColor') {
+          await activeBridge.sendLedColor(...msg.args);
+      } else if (msg.type === 'finished') {
+          try { await activeBridge.sendCommand(0, 0, 0); } catch {}
+          finishExecution('finished');
+      } else if (msg.type === 'stopped') {
+          try { await activeBridge.sendCommand(0, 0, 0); } catch {}
+          finishExecution('stopped');
+      } else if (msg.type === 'error') {
+          console.error("Worker error:", msg.error);
+          try { await activeBridge.sendCommand(0, 0, 0); } catch {}
+          finishExecution('error');
+      }
+  };
+  
+  // Provide initial lidar state
+  worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
+  worker.postMessage({ type: 'run', code });
 });
-
-
-
-function __checkAbort() {
-  if (_aborted) throw new Error('AbortExecution');
-}
-(window as any).__checkAbort = __checkAbort;
-
-function __sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    if (_aborted) { resolve(); return; }
-    let resolved = false;
-    const done = () => {
-      if (resolved) return;
-      resolved = true;
-      clearTimeout(timer);
-      clearInterval(check);
-      resolve();
-    };
-    const timer = setTimeout(done, ms);
-    const check = setInterval(() => {
-      if (_aborted) done();
-    }, 50);
-  });
-}
-(window as any).__sleep = __sleep;
 
 function abortExecution() {
   if (!_isRunning) return;
   _aborted = true;
+  if (worker) {
+      worker.postMessage({ type: 'abort' });
+  }
 }
 
 function startExecution() {

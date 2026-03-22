@@ -191,8 +191,15 @@ void LidarCar::setServo1Angle(uint8_t angle)// angle: 0 ~ 180
  *      A   范围 0/1  横向移动标志，为1时车可以向左右横向移动，
  * - 车方向及其速度控制
  */
-void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A)// X, Y, A: -7 ~ 7
+void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A, uint16_t durationMs)// X, Y, A: -7 ~ 7
 {  
+  if (durationMs > 0) {
+    _stopTime = millis() + durationMs;
+  } else {
+    // Any command without a duration (including a stop command) clears the timer
+    _stopTime = 0;
+  }
+
   //！将参数通过controlMap表格转化为四个电机的参数值
   //! controlMapX 为横向移动 时数据表格
   //！controlMap  为正常移动 时数据表格
@@ -216,6 +223,12 @@ void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A)// X, Y, A: -7 ~ 7
   Serial2.write(wheelPowerD);
   Serial2.write(0x55);
 
+  if (wheelPowerA != 0 || wheelPowerB != 0 || wheelPowerC != 0 || wheelPowerD != 0) {
+    Serial.printf("debug:wheel_power A=%d B=%d C=%d D=%d\n", (int8_t)wheelPowerA, (int8_t)wheelPowerB, (int8_t)wheelPowerC, (int8_t)wheelPowerD);
+  } else {
+    Serial.println("debug:wheel_power STOP (0,0,0,0)");
+  }
+
   //灯光设置，灯光随着车的方向速度 变化而变化
   if(Y>0){
     if (A == 0x01)
@@ -229,6 +242,14 @@ void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A)// X, Y, A: -7 ~ 7
       setLedAll(0,0,-Y);
   }
 
+}
+
+void LidarCar::Update(void) {
+  if (_stopTime > 0 && millis() > _stopTime) {
+    Serial.printf("debug:timer_expired! curr=%u stop=%u\n", millis(), _stopTime);
+    _stopTime = 0;
+    ControlWheel(0, 0, 0, 0);
+  }
 }
 
 /*!
@@ -634,14 +655,17 @@ void LidarCar::GetData(void){
           commandStatus = 0;
           return;
         }
-        switch ((commandStatus - 13) % 6)
         {
-          case 0: signalValue[(startAngle / 2250) * 22 + ((commandStatus - 13) / 6)] = r;  commandStatus++; break;
-          case 1: temp = r * 256;  commandStatus++; break;
-          case 2: temp += r; distance[(startAngle / 2250) * 22 + ((commandStatus - 13) / 6)] = temp > 2 ? temp : 250;  commandStatus++; break;
-          case 3: commandStatus++; break;
-          case 4: commandStatus++; break;
-          case 5: commandStatus++; break;
+          int index = (startAngle / 2250) * 22 + ((commandStatus - 13) / 6);
+          switch ((commandStatus - 13) % 6)
+          {
+            case 0: if (index >= 0 && index < 360) signalValue[index] = r;  commandStatus++; break;
+            case 1: temp = r * 256;  commandStatus++; break;
+            case 2: temp += r; if (index >= 0 && index < 360) distance[index] = temp > 2 ? temp : 250;  commandStatus++; break;
+            case 3: commandStatus++; break;
+            case 4: commandStatus++; break;
+            case 5: commandStatus++; break;
+          }
         } break;
     }
   }

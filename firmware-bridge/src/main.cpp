@@ -7,6 +7,8 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <BLESecurity.h>
+#include <string>
 
 // ──── BLE UART Service (Nordic UART Service UUIDs) ────
 #define SERVICE_UUID        "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -17,7 +19,8 @@ BLEServer *pServer = nullptr;
 BLECharacteristic *pTxCharacteristic = nullptr;
 bool bleClientConnected = false;
 bool lastBleClientConnected = false;
-String bleRxBuffer = "";
+std::string bleRxBuffer = "";
+unsigned long lastBleRxTime = 0;
 
 // BLE MTU for chunked sends (conservative, minus ATT overhead)
 static const int BLE_CHUNK_SIZE = 200;
@@ -29,6 +32,9 @@ esp_now_peer_info_t peerInfo;
 int packetCount = 0;
 unsigned long lastRecvTime = 0;
 bool lastBotConnected = false;
+
+bool isPairingWindowActive = false;
+unsigned long pairingWindowStartTime = 0;
 
 // ──── BLE Callbacks ────
 class BleServerCallbacks : public BLEServerCallbacks {
@@ -44,8 +50,9 @@ class BleServerCallbacks : public BLEServerCallbacks {
 
 class BleRxCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pCharacteristic) override {
-    String rxValue = pCharacteristic->getValue().c_str();
+    std::string rxValue = pCharacteristic->getValue();
     bleRxBuffer += rxValue;
+    lastBleRxTime = millis();
   }
 };
 
@@ -83,10 +90,10 @@ void processCommand(String input) {
   M5.Lcd.println(input);
 
   if (input == "pair") {
+    isPairingWindowActive = true;
+    pairingWindowStartTime = millis();
     uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    uint8_t handshake[7];
-    esp_read_mac(handshake, ESP_MAC_WIFI_STA);
-    handshake[6] = 0;
+    uint8_t handshake[7] = {'P', 'A', 'I', 'R', 0, 0, 0};
     for (int i = 0; i < 6; i++) {
       esp_now_send(broadcastMac, handshake, 7);
       delay(100);
@@ -117,22 +124,48 @@ void processCommand(String input) {
       writeAllLn(String(b));
     }
   } else {
-    // Check for move command: x,y,z
+    // Check for move command: x,y,z[,duration]
     int firstComma = input.indexOf(',');
     int secondComma = input.indexOf(',', firstComma + 1);
+    int thirdComma = input.indexOf(',', secondComma + 1);
+
     if (firstComma > 0 && secondComma > 0) {
       int x = input.substring(0, firstComma).toInt();
       int y = input.substring(firstComma + 1, secondComma).toInt();
-      int z = input.substring(secondComma + 1).toInt();
+      
+      int z, duration = 0;
+      if (thirdComma > 0) {
+        z = input.substring(secondComma + 1, thirdComma).toInt();
+        duration = input.substring(thirdComma + 1).toInt();
+      } else {
+        z = input.substring(secondComma + 1).toInt();
+      }
 
       x = constrain(x, -7, 7);
       y = constrain(y, -7, 7);
 
-      uint8_t moveDataArray[3];
-      moveDataArray[0] = (uint8_t)(int8_t)x;
-      moveDataArray[1] = (uint8_t)(int8_t)y;
-      moveDataArray[2] = (uint8_t)(z > 0 ? 1 : 0);
-      esp_now_send(lidarBotAddress, moveDataArray, 3);
+      if (duration > 0) {
+        writeAll("debug:bridge_move_timed_x"); writeAll(String(x));
+        writeAll("_y"); writeAll(String(y));
+        writeAll("_dur"); writeAllLn(String(duration));
+
+        uint8_t moveDataArray[6] = {0, 0, 0, 0, 0, 0};
+        moveDataArray[0] = (uint8_t)(int8_t)x;
+        moveDataArray[1] = (uint8_t)(int8_t)y;
+        moveDataArray[2] = (uint8_t)(z > 0 ? 1 : 0);
+        moveDataArray[3] = (uint8_t)(duration >> 8);
+        moveDataArray[4] = (uint8_t)(duration & 0xFF);
+        esp_now_send(lidarBotAddress, moveDataArray, 6);
+      } else {
+        writeAll("debug:bridge_move_simple_x"); writeAll(String(x));
+        writeAll("_y"); writeAllLn(String(y));
+
+        uint8_t moveDataArray[3];
+        moveDataArray[0] = (uint8_t)(int8_t)x;
+        moveDataArray[1] = (uint8_t)(int8_t)y;
+        moveDataArray[2] = (uint8_t)(z > 0 ? 1 : 0);
+        esp_now_send(lidarBotAddress, moveDataArray, 3);
+      }
     }
   }
 }
@@ -161,14 +194,18 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     if (lidarBotAddress[i] != mac[i]) isNewMac = true;
   }
   if (isNewMac) {
-    memcpy(lidarBotAddress, mac, 6);
-    if (esp_now_is_peer_exist(lidarBotAddress)) {
-        esp_now_del_peer(lidarBotAddress);
+    if (isPairingWindowActive && (millis() - pairingWindowStartTime <= 30000)) {
+      memcpy(lidarBotAddress, mac, 6);
+      if (esp_now_is_peer_exist(lidarBotAddress)) {
+          esp_now_del_peer(lidarBotAddress);
+      }
+      memcpy(peerInfo.peer_addr, lidarBotAddress, 6);
+      peerInfo.channel = 1;
+      peerInfo.encrypt = false;
+      esp_now_add_peer(&peerInfo);
+    } else {
+      writeAllLn("debug:ignored_new_mac_pairing_window_closed");
     }
-    memcpy(peerInfo.peer_addr, lidarBotAddress, 6);
-    peerInfo.channel = 1;
-    peerInfo.encrypt = false;
-    esp_now_add_peer(&peerInfo);
   }
 
   if (len == 6) {
@@ -181,6 +218,10 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   else if (len == 180) {
     packetCount++;
     
+    // Throttle Lidar data reporting to prevent Serial/BLE congestion.
+    // At ~40 packets/sec (5Hz rotation), sending every 4th packet gives ~10Hz updates.
+    if (packetCount % 4 != 0) return;
+
     String lidarMsg = "lidar:";
     for (int i = 0; i < 45; i++) {
       uint16_t angle = (incomingData[i*4] << 8) + incomingData[i*4+1];
@@ -194,12 +235,12 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     writeAllLn(lidarMsg);
 
     // Show pulse on LCD and LED
-    if (packetCount % 5 == 0) {
+    if ((packetCount / 4) % 5 == 0) {
         digitalWrite(10, LOW);
         M5.Lcd.setCursor(0, 65);
         M5.Lcd.fillRect(0, 65, 160, 15, BLACK);
         M5.Lcd.printf("Lidar PKTs: %d", packetCount);
-    } else if (packetCount % 5 == 2) {
+    } else if ((packetCount / 4) % 5 == 2) {
         digitalWrite(10, HIGH);
     }
   }
@@ -226,10 +267,16 @@ void setup() {
   M5.Lcd.setTextColor(RED);
   M5.Lcd.print("Bot: Disconnected");
 
-  Serial.begin(115200);
+  Serial.begin(500000);
 
   // ── BLE UART Init ──
   BLEDevice::init("LidarBot-Bridge");
+  BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
+  BLESecurity *pSecurity = new BLESecurity();
+  pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_BOND);
+  pSecurity->setCapability(ESP_IO_CAP_NONE);
+  pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
+  
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new BleServerCallbacks());
 
@@ -325,9 +372,7 @@ void loop() {
   if (!botConnected && (millis() - lastAutoPairTime > 3000)) {
     lastAutoPairTime = millis();
     uint8_t broadcastMac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    uint8_t handshake[7];
-    esp_read_mac(handshake, ESP_MAC_WIFI_STA);
-    handshake[6] = 0;
+    uint8_t handshake[7] = {'P', 'A', 'I', 'R', 0, 0, 0};
     esp_now_send(broadcastMac, handshake, 7);
   }
 
@@ -350,21 +395,19 @@ void loop() {
 
   // ── Process BLE input ──
   if (bleRxBuffer.length() > 0) {
-    // Extract complete lines from the buffer
-    int nlPos;
-    while ((nlPos = bleRxBuffer.indexOf('\n')) >= 0) {
-      String line = bleRxBuffer.substring(0, nlPos);
-      bleRxBuffer = bleRxBuffer.substring(nlPos + 1);
-      processCommand(line);
-    }
-    // If there's data without newline and it's been sitting, process it anyway
-    // (some BLE clients might not send newlines)
-    if (bleRxBuffer.length() > 0 && bleRxBuffer.length() < 256) {
-      // Keep buffering — wait for newline
-    } else if (bleRxBuffer.length() >= 256) {
-      // Safety: flush oversized buffer as a single command
-      processCommand(bleRxBuffer);
-      bleRxBuffer = "";
+    if (millis() - lastBleRxTime > 1000) {
+      bleRxBuffer.clear();
+    } else {
+      size_t nlPos;
+      while ((nlPos = bleRxBuffer.find('\n')) != std::string::npos) {
+        String line = String(bleRxBuffer.substr(0, nlPos).c_str());
+        bleRxBuffer.erase(0, nlPos + 1);
+        processCommand(line);
+      }
+      if (bleRxBuffer.length() >= 256) {
+        processCommand(String(bleRxBuffer.c_str()));
+        bleRxBuffer.clear();
+      }
     }
   }
 }

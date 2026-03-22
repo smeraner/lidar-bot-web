@@ -15,7 +15,7 @@ class LidarCar {
    LidarCar();
    void Init(void);
    void ControlMode(void);
-   void ControlWheel(int8_t X, int8_t Y, byte A);
+   void ControlWheel(int8_t X, int8_t Y, byte A, uint16_t durationMs = 0);
    void GetData(void);
    void MapDisplay(void);
    void CarCortrol(void);
@@ -24,6 +24,7 @@ class LidarCar {
    void TrackControl(void);
    void LedShow(void);
    void SetColor(byte r, byte g, byte b);
+   void Update(void);
  public:
    uint8_t mapdata[180];
    uint16_t distance[360];
@@ -35,6 +36,7 @@ class LidarCar {
    int contro_mode = 0;
 
  private:
+   uint32_t _stopTime = 0;
    void setLedColor(byte i, byte r, byte g, byte b);
    void setFrontLedBar( byte r, byte g, byte b);
    void setBackLedBar( byte r, byte g, byte b);

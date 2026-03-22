@@ -14,11 +14,11 @@ export function defineGenerators() {
         if (direction === 'LEFT') x = -s;
         if (direction === 'RIGHT') x = s;
 
-        return `__checkAbort();\nawait serialBridge.sendCommand(${x}, ${y}, ${z});\nawait __sleep(${duration});\n__checkAbort();\nawait serialBridge.sendCommand(0, 0, 0);\nawait __sleep(50);\nawait serialBridge.sendCommand(0, 0, 0);\nawait __sleep(100);\n`;
+        return `__checkAbort();\nawait serialBridge.sendCommand(${x}, ${y}, ${z}, ${duration});\nawait __sleep(${duration});\n`;
     };
 
     javascriptGenerator.forBlock['lidarbot_stop'] = function () {
-        return `__checkAbort();\nawait serialBridge.sendCommand(0, 0, 0);\nawait __sleep(50);\nawait serialBridge.sendCommand(0, 0, 0);\nawait __sleep(100);\n`;
+        return `__checkAbort();\nawait serialBridge.sendCommand(0, 0, 0);\n`;
     };
 
     javascriptGenerator.forBlock['lidarbot_led_show'] = function () {

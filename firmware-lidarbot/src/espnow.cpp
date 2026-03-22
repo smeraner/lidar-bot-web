@@ -182,6 +182,8 @@ int8_t Espnow::OnBotRecv(const uint8_t *mac_addr, const uint8_t *data, int data_
 {
   if (data_len == 7)
   {
+    if (data[0] != 'P' || data[1] != 'A' || data[2] != 'I' || data[3] != 'R') return 0;
+
     // Auto Pair with sender
     for (int i = 0; i < 6; i++) {
         peer_addr[i] = mac_addr[i];

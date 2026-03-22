@@ -3,7 +3,7 @@ export interface IBridgeTransport {
     readonly robotStatus: 'connected' | 'disconnected' | 'searching';
     connect(): Promise<void>;
     disconnect(): Promise<void>;
-    sendCommand(x: number, y: number, z: number): Promise<void>;
+    sendCommand(x: number, y: number, z: number, duration?: number): Promise<void>;
     sendLedShow(): Promise<void>;
     sendLedColor(r: number, g: number, b: number): Promise<void>;
     pair(): Promise<void>;
@@ -33,7 +33,7 @@ export class SerialBridge implements IBridgeTransport {
         try {
             const port = await navigator.serial.requestPort();
             this.port = port;
-            await port.open({ baudRate: 115200 });
+            await port.open({ baudRate: 500000 });
             
             if (!port.writable || !port.readable) {
                 throw new Error("Serial port is not writable/readable");
@@ -85,10 +85,11 @@ export class SerialBridge implements IBridgeTransport {
             const data = line.substring(6).split(",");
             const points: { angle: number, distance: number }[] = [];
             for (let i = 0; i < data.length; i += 2) {
-                points.push({
-                    angle: parseInt(data[i]),
-                    distance: parseInt(data[i + 1])
-                });
+                const angle = parseInt(data[i]);
+                const distance = parseInt(data[i + 1]);
+                if (!isNaN(angle) && !isNaN(distance)) {
+                    points.push({ angle, distance });
+                }
             }
             if (this.lidarCallback) {
                 this.lidarCallback(points);
@@ -125,22 +126,27 @@ export class SerialBridge implements IBridgeTransport {
     }
 
     async disconnect() {
+        this._isConnected = false;
+        this._robotStatus = 'disconnected';
+        if (this.reader) {
+            await this.reader.cancel();
+            this.reader = null;
+        }
+        if (this.writer) {
+            await this.writer.close();
+            this.writer = null;
+        }
         if (this.port) {
-            this._isConnected = false;
-            this._robotStatus = 'disconnected';
-            if (this.reader) await this.reader.cancel();
             await this.port.close();
             this.port = null;
-            this.writer = null;
-            this.reader = null;
-            console.log("Disconnected from Serial Bridge");
-            if (this.robotStatusCallback) this.robotStatusCallback('disconnected');
         }
+        console.log("Disconnected from Serial Bridge");
+        if (this.robotStatusCallback) this.robotStatusCallback('disconnected');
     }
 
-    async sendCommand(x: number, y: number, z: number) {
+    async sendCommand(x: number, y: number, z: number, duration: number = 0) {
         if (this.writer) {
-            const command = `${x},${y},${z}\n`;
+            const command = duration > 0 ? `${x},${y},${z},${duration}\n` : `${x},${y},${z}\n`;
             await this.writer.write(command);
         } else {
             console.warn("Serial port not connected");
