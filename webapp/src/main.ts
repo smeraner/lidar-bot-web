@@ -132,10 +132,10 @@ function updateUI() {
 
   if (mainConnectBtn) {
     if (serialBridge.isConnected || bluetoothBridge.isConnected) {
-      mainConnectBtn.textContent = t('disconnect');
+      mainConnectBtn.textContent = t('disconnect') + " ▾";
       mainConnectBtn.classList.add('connected');
     } else {
-      mainConnectBtn.textContent = t('connect');
+      mainConnectBtn.textContent = t('connect') + " ▾";
       mainConnectBtn.classList.remove('connected');
     }
   }
@@ -235,17 +235,16 @@ updateUI();
 
 // ── Consolidated Connect Logic ──
 const mainConnectBtn = document.getElementById('mainConnectBtn') as HTMLButtonElement;
-mainConnectBtn?.addEventListener('click', async () => {
-    // If anything is connected, clicking main button disconnects active
-    if (activeBridge.isConnected) {
-        await activeBridge.disconnect();
-    } else {
-        // Just toggle dropdown visibility for better UX on some devices
-        // (Hover handles it on desktop)
-        const dropdown = mainConnectBtn.parentElement;
-        dropdown?.classList.toggle('active');
-    }
+mainConnectBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dropdown = mainConnectBtn.parentElement;
+    dropdown?.classList.toggle('active');
     updateUI();
+});
+
+// Close dropdown when clicking elsewhere
+window.addEventListener('click', () => {
+  mainConnectBtn?.parentElement?.classList.remove('active');
 });
 
 const usbDropdownBtn = document.getElementById('connectBtn') as HTMLButtonElement;
