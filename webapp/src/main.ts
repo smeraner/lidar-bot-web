@@ -125,28 +125,41 @@ function updateUI() {
     }
   });
 
-  // ── USB Serial connect button ──
-  const connectBtn = document.getElementById('connectBtn') as HTMLButtonElement;
-  if (connectBtn) {
-    if (serialBridge.isConnected) {
-      connectBtn.innerText = t('disconnect');
-      connectBtn.classList.add('connected');
+  // ── Consolidated Connection Buttons ──
+  const mainConnectBtn = document.getElementById('mainConnectBtn') as HTMLButtonElement;
+  const usbDropdownBtn = document.getElementById('connectBtn') as HTMLButtonElement;
+  const bleDropdownBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
+
+  if (mainConnectBtn) {
+    if (serialBridge.isConnected || bluetoothBridge.isConnected) {
+      mainConnectBtn.textContent = t('disconnect');
+      mainConnectBtn.classList.add('connected');
     } else {
-      connectBtn.innerText = t('connect');
-      connectBtn.classList.remove('connected');
+      mainConnectBtn.textContent = t('connect');
+      mainConnectBtn.classList.remove('connected');
     }
   }
 
-  // ── BLE connect button ──
-  const btConnectBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
-  if (btConnectBtn) {
-    if (bluetoothBridge.isConnected) {
-      btConnectBtn.innerText = t('disconnect_bt');
-      btConnectBtn.classList.add('connected');
+  if (usbDropdownBtn) {
+    if (serialBridge.isConnected) {
+      usbDropdownBtn.textContent = "🔌 " + t('disconnect'); // or t('bridge_usb') + " " + t('disconnect')
+      usbDropdownBtn.classList.add('connected');
     } else {
-      btConnectBtn.innerText = t('connect_bt');
-      btConnectBtn.classList.remove('connected');
+      usbDropdownBtn.textContent = "🔌 " + t('bridge_usb');
+      usbDropdownBtn.classList.remove('connected');
     }
+    usbDropdownBtn.classList.toggle('active', activeBridge === serialBridge);
+  }
+
+  if (bleDropdownBtn) {
+    if (bluetoothBridge.isConnected) {
+      bleDropdownBtn.textContent = "🔵 " + t('disconnect_bt'); 
+      bleDropdownBtn.classList.add('connected');
+    } else {
+      bleDropdownBtn.textContent = "🔵 " + t('bridge_bt');
+      bleDropdownBtn.classList.remove('connected');
+    }
+    bleDropdownBtn.classList.toggle('active', activeBridge === bluetoothBridge);
   }
 
   // Update status indicators — reflect the *active* bridge
@@ -220,31 +233,58 @@ if (languageSelect) {
 
 updateUI();
 
-// ── USB Serial Connect ──
-const connectBtn = document.getElementById('connectBtn') as HTMLButtonElement;
-connectBtn?.addEventListener('click', async () => {
+// ── Consolidated Connect Logic ──
+const mainConnectBtn = document.getElementById('mainConnectBtn') as HTMLButtonElement;
+mainConnectBtn?.addEventListener('click', async () => {
+    // If anything is connected, clicking main button disconnects active
+    if (activeBridge.isConnected) {
+        await activeBridge.disconnect();
+    } else {
+        // Just toggle dropdown visibility for better UX on some devices
+        // (Hover handles it on desktop)
+        const dropdown = mainConnectBtn.parentElement;
+        dropdown?.classList.toggle('active');
+    }
+    updateUI();
+});
+
+const usbDropdownBtn = document.getElementById('connectBtn') as HTMLButtonElement;
+usbDropdownBtn?.addEventListener('click', async (e) => {
+    e.stopPropagation();
     if (serialBridge.isConnected) {
         await serialBridge.disconnect();
     } else {
+        // Disconnect BLE if active
+        if (bluetoothBridge.isConnected) {
+            await bluetoothBridge.disconnect();
+        }
         await serialBridge.connect();
         if (serialBridge.isConnected) {
           setActiveBridge(serialBridge);
         }
     }
+    // Close dropdown
+    mainConnectBtn?.parentElement?.classList.remove('active');
     updateUI();
 });
 
-// ── Bluetooth Connect ──
-const btConnectBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
-btConnectBtn?.addEventListener('click', async () => {
+const bleDropdownBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
+bleDropdownBtn?.addEventListener('click', async (e) => {
+    e.stopPropagation();
     if (bluetoothBridge.isConnected) {
         await bluetoothBridge.disconnect();
     } else {
+        // Disconnect USB if active
+        if (serialBridge.isConnected) {
+            await serialBridge.disconnect();
+        }
         await bluetoothBridge.connect();
         if (bluetoothBridge.isConnected) {
           setActiveBridge(bluetoothBridge);
         }
     }
+    // Close dropdown
+    mainConnectBtn?.parentElement?.classList.remove('active');
     updateUI();
 });
 
