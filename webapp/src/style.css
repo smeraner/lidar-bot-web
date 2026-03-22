@@ -325,6 +325,7 @@ main {
   overflow: hidden;
   border: 1px solid var(--border);
   background: #1a2744;
+  touch-action: none;
 }
 
 /* Customizing Blockly look */
