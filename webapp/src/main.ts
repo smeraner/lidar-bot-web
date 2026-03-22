@@ -18,6 +18,13 @@ let activeBridge: IBridgeTransport = serialBridge;
 // Expose as `serialBridge` on window so Blockly-generated code works regardless of transport
 (window as any).serialBridge = activeBridge;
 
+// === Execution State Management ===
+let _isRunning = false;
+let _aborted = false;
+let _execStartTime = 0;
+let _execTimerInterval: ReturnType<typeof setInterval> | null = null;
+let _execAutoHideTimeout: ReturnType<typeof setTimeout> | null = null;
+
 function setActiveBridge(bridge: IBridgeTransport) {
   activeBridge = bridge;
   (window as any).serialBridge = bridge;
@@ -196,6 +203,12 @@ function updateUI() {
     }
   }
 
+  // Update run button state
+  const runBtn = document.getElementById('runBtn') as HTMLButtonElement;
+  if (runBtn && !_isRunning) {
+    runBtn.disabled = activeBridge.robotStatus !== 'connected';
+  }
+
   // Update document title
   document.title = t('title');
 
@@ -330,12 +343,7 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   }
 });
 
-// === Execution State Management ===
-let _isRunning = false;
-let _aborted = false;
-let _execStartTime = 0;
-let _execTimerInterval: ReturnType<typeof setInterval> | null = null;
-let _execAutoHideTimeout: ReturnType<typeof setTimeout> | null = null;
+
 
 function __checkAbort() {
   if (_aborted) throw new Error('AbortExecution');
@@ -431,10 +439,10 @@ function finishExecution(status: 'finished' | 'stopped' | 'error') {
   }
 
   // Restore buttons
-  const runBtn = document.getElementById('runBtn') as HTMLButtonElement;
   const stopBtn = document.getElementById('stopBtn');
-  if (runBtn) runBtn.disabled = false;
   if (stopBtn) stopBtn.style.display = 'none';
+
+  updateUI();
 
   // Auto-hide bar after a few seconds
   _execAutoHideTimeout = setTimeout(() => {

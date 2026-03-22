@@ -7,7 +7,8 @@ export function defineGenerators() {
         const duration = block.getFieldValue('DURATION');
 
         let x = 0, y = 0, z = 0;
-        const s = parseInt(speed);
+        // Map blockly speed (0-100) to LidarBot kinematics (0 to 7)
+        const s = Math.round(parseInt(speed) * 7 / 100);
         if (direction === 'FORWARD') y = s;
         if (direction === 'BACKWARD') y = -s;
         if (direction === 'LEFT') x = -s;
