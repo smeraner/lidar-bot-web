@@ -1,5 +1,7 @@
 import * as Blockly from 'blockly';
 import { serialBridge } from './serial';
+import type { IBridgeTransport } from './serial';
+import { bluetoothBridge } from './bluetooth';
 import { lidarStore } from './lidarStore';
 import { defineBlocks } from './blockly/blocks';
 import { defineGenerators } from './blockly/generator';
@@ -11,14 +13,46 @@ import './style.css';
 defineBlocks();
 defineGenerators();
 
+// ── Active bridge transport (shared reference used by Blockly generated code) ──
+let activeBridge: IBridgeTransport = serialBridge;
+// Expose as `serialBridge` on window so Blockly-generated code works regardless of transport
+(window as any).serialBridge = activeBridge;
+
+function setActiveBridge(bridge: IBridgeTransport) {
+  activeBridge = bridge;
+  (window as any).serialBridge = bridge;
+
+  // Re-register callbacks on the new transport
+  bridge.onLidarData((points) => {
+    lidarStore.update(points);
+    if (lidarView) {
+      lidarView.update(lidarStore.getAllDistances());
+    }
+    updateUI();
+  });
+
+  bridge.onRobotStatus(() => {
+    updateUI();
+  });
+}
+
 let lidarView: LidarView | null = null;
 
+// Register callbacks on initial bridge
 serialBridge.onLidarData((points) => {
   lidarStore.update(points);
   if (lidarView) {
     lidarView.update(lidarStore.getAllDistances());
   }
-  updateUI(); // Ensure robot status dot turns green
+  updateUI();
+});
+
+bluetoothBridge.onLidarData((points) => {
+  lidarStore.update(points);
+  if (lidarView) {
+    lidarView.update(lidarStore.getAllDistances());
+  }
+  updateUI();
 });
 
 const toolbox = `
@@ -91,20 +125,34 @@ function updateUI() {
     }
   });
 
-  // Update dynamic button text based on connection state
+  // ── USB Serial connect button ──
   const connectBtn = document.getElementById('connectBtn') as HTMLButtonElement;
   if (connectBtn) {
     if (serialBridge.isConnected) {
       connectBtn.innerText = t('disconnect');
+      connectBtn.classList.add('connected');
     } else {
       connectBtn.innerText = t('connect');
+      connectBtn.classList.remove('connected');
     }
   }
 
-  // Update status indicators
+  // ── BLE connect button ──
+  const btConnectBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
+  if (btConnectBtn) {
+    if (bluetoothBridge.isConnected) {
+      btConnectBtn.innerText = t('disconnect_bt');
+      btConnectBtn.classList.add('connected');
+    } else {
+      btConnectBtn.innerText = t('connect_bt');
+      btConnectBtn.classList.remove('connected');
+    }
+  }
+
+  // Update status indicators — reflect the *active* bridge
   const bridgeStatus = document.getElementById('bridgeStatus');
   if (bridgeStatus) {
-    if (serialBridge.isConnected) {
+    if (activeBridge.isConnected) {
       bridgeStatus.classList.add('connected');
     } else {
       bridgeStatus.classList.remove('connected');
@@ -115,7 +163,7 @@ function updateUI() {
   const robotStatusText = document.getElementById('robotStatusText');
   if (robotStatus) {
     robotStatus.classList.remove('connected', 'searching', 'disconnected');
-    const status = serialBridge.robotStatus;
+    const status = activeBridge.robotStatus;
     robotStatus.classList.add(status);
     
     if (robotStatusText) {
@@ -128,8 +176,7 @@ function updateUI() {
   // Update visibility of Pair button
   const pairBtn = document.getElementById('pairBtn');
   if (pairBtn) {
-    // Show pair button if bridge is connected but robot is not connected (it might be searching or disconnected)
-    if (serialBridge.isConnected && serialBridge.robotStatus !== 'connected') {
+    if (activeBridge.isConnected && activeBridge.robotStatus !== 'connected') {
       pairBtn.style.display = 'inline-block';
     } else {
       pairBtn.style.display = 'none';
@@ -144,6 +191,10 @@ function updateUI() {
 }
 
 serialBridge.onRobotStatus(() => {
+  updateUI();
+});
+
+bluetoothBridge.onRobotStatus(() => {
   updateUI();
 });
 
@@ -169,23 +220,36 @@ if (languageSelect) {
 
 updateUI();
 
+// ── USB Serial Connect ──
 const connectBtn = document.getElementById('connectBtn') as HTMLButtonElement;
 connectBtn?.addEventListener('click', async () => {
     if (serialBridge.isConnected) {
         await serialBridge.disconnect();
-        updateUI();
-        connectBtn.classList.remove('connected');
     } else {
         await serialBridge.connect();
         if (serialBridge.isConnected) {
-          updateUI();
-          connectBtn.classList.add('connected');
+          setActiveBridge(serialBridge);
         }
     }
+    updateUI();
+});
+
+// ── Bluetooth Connect ──
+const btConnectBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
+btConnectBtn?.addEventListener('click', async () => {
+    if (bluetoothBridge.isConnected) {
+        await bluetoothBridge.disconnect();
+    } else {
+        await bluetoothBridge.connect();
+        if (bluetoothBridge.isConnected) {
+          setActiveBridge(bluetoothBridge);
+        }
+    }
+    updateUI();
 });
 
 document.getElementById('pairBtn')?.addEventListener('click', async () => {
-    await serialBridge.pair();
+    await activeBridge.pair();
 });
 
 document.getElementById('runBtn')?.addEventListener('click', async () => {
@@ -194,14 +258,14 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
 
   const code = javascriptGenerator.workspaceToCode(workspace);
   // Expose tools to the eval context
-  (window as any).serialBridge = serialBridge;
+  (window as any).serialBridge = activeBridge;
   (window as any).lidarStore = lidarStore;
 
   try {
     // Wrap in an async IIFE to support await in generated code
     const AsyncFunction = async function () { }.constructor as any;
     const execute = new AsyncFunction('serialBridge', 'lidarStore', '__checkAbort', '__sleep', code);
-    await execute(serialBridge, lidarStore, __checkAbort, __sleep);
+    await execute(activeBridge, lidarStore, __checkAbort, __sleep);
     if (!_aborted) {
       finishExecution('finished');
     }
@@ -209,7 +273,7 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
     if (e?.message === 'AbortExecution') {
       finishExecution('stopped');
       // Send stop command to ensure the robot halts
-      try { await serialBridge.sendCommand(0, 0, 0); } catch {}
+      try { await activeBridge.sendCommand(0, 0, 0); } catch {}
     } else {
       console.error("Execution error", e);
       finishExecution('error');

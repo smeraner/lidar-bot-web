@@ -1,4 +1,18 @@
-export class SerialBridge {
+export interface IBridgeTransport {
+    readonly isConnected: boolean;
+    readonly robotStatus: 'connected' | 'disconnected' | 'searching';
+    connect(): Promise<void>;
+    disconnect(): Promise<void>;
+    sendCommand(x: number, y: number, z: number): Promise<void>;
+    sendLedShow(): Promise<void>;
+    sendLedColor(r: number, g: number, b: number): Promise<void>;
+    pair(): Promise<void>;
+    requestStatus(): Promise<void>;
+    onLidarData(callback: (points: { angle: number, distance: number }[]) => void): void;
+    onRobotStatus(callback: (status: 'connected' | 'disconnected' | 'searching') => void): void;
+}
+
+export class SerialBridge implements IBridgeTransport {
     private port: SerialPort | null = null;
     private writer: WritableStreamDefaultWriter<string> | null = null;
     private _isConnected: boolean = false;

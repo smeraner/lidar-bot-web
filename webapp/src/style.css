@@ -500,3 +500,27 @@ main {
   opacity: 0;
   pointer-events: none;
 }
+
+/* Bluetooth Connect Button */
+.premium-btn.bt-btn {
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
+.premium-btn.bt-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: #818cf8;
+  color: #c7d2fe;
+}
+
+.premium-btn.bt-btn.connected {
+  background: #4f46e5;
+  border-color: #6366f1;
+  color: white;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+}
+
+.premium-btn.bt-btn.connected:hover {
+  background: #4338ca;
+  border-color: #4f46e5;
+}

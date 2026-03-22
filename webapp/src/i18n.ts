@@ -40,7 +40,11 @@ export const translations = {
         running_program: 'Program running...',
         program_finished: 'Program finished',
         program_stopped: 'Program stopped',
-        program_error: 'Program error'
+        program_error: 'Program error',
+        connect_bt: '\u{1F535} Bluetooth',
+        disconnect_bt: '\u{1F534} Disconnect BT',
+        bridge_usb: 'USB',
+        bridge_bt: 'BLE'
     },
     de: {
         title: 'LidarBot Steuerung',
@@ -80,7 +84,11 @@ export const translations = {
         running_program: 'Programm läuft...',
         program_finished: 'Programm beendet',
         program_stopped: 'Programm gestoppt',
-        program_error: 'Programmfehler'
+        program_error: 'Programmfehler',
+        connect_bt: '\u{1F535} Bluetooth',
+        disconnect_bt: '\u{1F534} BT Trennen',
+        bridge_usb: 'USB',
+        bridge_bt: 'BLE'
     }
 };
 
