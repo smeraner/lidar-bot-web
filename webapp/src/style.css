@@ -329,6 +329,12 @@ main {
 }
 
 /* Customizing Blockly look */
+.blocklyHighlighted > .blocklyPath {
+  stroke: var(--accent) !important;
+  stroke-width: 4px !important;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
 .blocklyMainBackground {
   stroke: none !important;
   fill: #1a2744 !important;

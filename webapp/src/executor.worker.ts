@@ -44,6 +44,11 @@ self.onmessage = async (e) => {
             if (_aborted) throw new Error('AbortExecution');
         };
 
+        const __highlightBlock = async (id: string) => {
+            self.postMessage({ type: 'highlightBlock', id });
+            await __sleep(10); // Brief yield to allow UI to react
+        };
+
         const __sleep = (ms: number) => {
             return new Promise<void>(resolve => {
                 if (_aborted) return resolve();
@@ -60,8 +65,8 @@ self.onmessage = async (e) => {
 
         try {
             const AsyncFunction = async function () { }.constructor as any;
-            const execute = new AsyncFunction('serialBridge', 'lidarStore', '__checkAbort', '__sleep', code);
-            await execute(serialBridge, lidarStore, __checkAbort, __sleep);
+            const execute = new AsyncFunction('serialBridge', 'lidarStore', '__checkAbort', '__sleep', '__highlightBlock', code);
+            await execute(serialBridge, lidarStore, __checkAbort, __sleep, __highlightBlock);
             self.postMessage({ type: 'finished' });
         } catch (err: any) {
             if (err?.message === 'AbortExecution') {

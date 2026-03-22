@@ -30,7 +30,12 @@ void Espnow::BotInit(void){
   //sscanf(WiFi.softAPmacAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &sta_addr[0], &sta_addr[1], &sta_addr[2], &sta_addr[3], &sta_addr[4], &sta_addr[5] );
 //WiFi.softAPmacAddress()
   //if(!bot)
-  sscanf(WiFi.macAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &sta_addr[0], &sta_addr[1], &sta_addr[2], &sta_addr[3], &sta_addr[4], &sta_addr[5] );
+  {
+    int m[6];
+    if (6 == sscanf(WiFi.macAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &m[0], &m[1], &m[2], &m[3], &m[4], &m[5] )) {
+      for(int i=0; i<6; i++) sta_addr[i] = (uint8_t)m[i];
+    }
+  }
    //else
    //sscanf(WiFi.softAPmacAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &sta_addr[0], &sta_addr[1], &sta_addr[2], &sta_addr[3], &sta_addr[4], &sta_addr[5] );
 //WiFi.softAPmacAddress()
@@ -39,10 +44,15 @@ void Espnow::BotInit(void){
   
   preferences.begin("my-app", false);
   String mac_addr;
-  mac_addr = preferences.getString("mac_addr", "error");
+  mac_addr = preferences.getString("mac_addr", "00:00:00:00:00:00");
   Serial.print("mac_addr = ");Serial.print(mac_addr);
  
-  sscanf(mac_addr.c_str(), "%x:%x:%x:%x:%x:%x%c",  &peer_addr[0], &peer_addr[1], &peer_addr[2], &peer_addr[3], &peer_addr[4], &peer_addr[5]);
+  {
+    int m[6];
+    if (6 <= sscanf(mac_addr.c_str(), "%x:%x:%x:%x:%x:%x",  &m[0], &m[1], &m[2], &m[3], &m[4], &m[5])) {
+      for(int i=0; i<6; i++) peer_addr[i] = (uint8_t)m[i];
+    }
+  }
   
   for (int i = 0; i < 6; ++i ){
     slave.peer_addr[i] = (uint8_t) peer_addr[i];
@@ -73,7 +83,12 @@ void Espnow::RemoteInit(void)
   //sscanf(WiFi.softAPmacAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &sta_addr[0], &sta_addr[1], &sta_addr[2], &sta_addr[3], &sta_addr[4], &sta_addr[5] );
 //WiFi.softAPmacAddress()
   //if(!bot)
-  sscanf(WiFi.softAPmacAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &sta_addr[0], &sta_addr[1], &sta_addr[2], &sta_addr[3], &sta_addr[4], &sta_addr[5] );
+  {
+    int m[6];
+    if (6 == sscanf(WiFi.softAPmacAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &m[0], &m[1], &m[2], &m[3], &m[4], &m[5] )) {
+      for(int i=0; i<6; i++) sta_addr[i] = (uint8_t)m[i];
+    }
+  }
    //else
    //sscanf(WiFi.softAPmacAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &sta_addr[0], &sta_addr[1], &sta_addr[2], &sta_addr[3], &sta_addr[4], &sta_addr[5] );
 //WiFi.softAPmacAddress()
@@ -82,10 +97,15 @@ void Espnow::RemoteInit(void)
   
   preferences.begin("my-app", false);
   String mac_addr;
-  mac_addr = preferences.getString("mac_addr", "error");
+  mac_addr = preferences.getString("mac_addr", "00:00:00:00:00:00");
   Serial.print("mac_addr = ");Serial.print(mac_addr);
  
-  sscanf(mac_addr.c_str(), "%x:%x:%x:%x:%x:%x%c",  &peer_addr[0], &peer_addr[1], &peer_addr[2], &peer_addr[3], &peer_addr[4], &peer_addr[5]);
+  {
+    int m[6];
+    if (6 <= sscanf(mac_addr.c_str(), "%x:%x:%x:%x:%x:%x",  &m[0], &m[1], &m[2], &m[3], &m[4], &m[5])) {
+      for(int i=0; i<6; i++) peer_addr[i] = (uint8_t)m[i];
+    }
+  }
   
   for (int i = 0; i < 6; ++i ){
     slave.peer_addr[i] = (uint8_t) peer_addr[i];
@@ -154,16 +174,16 @@ int8_t Espnow::OnRemotRecv(const uint8_t *mac_addr, const uint8_t *data, int dat
           }
         }
 
-        if(i == connect_num)
+        if(i == connect_num && connect_num < 20)
         {
-            for(int i = 0; i < 6;i++)
+            for(int k = 0; k < 6; k++)
             {
-                connect_addr[connect_num][i] = data[i];
+                connect_addr[connect_num][k] = data[k];
             }
             connect_num++;
         }
     }
-    if(connect_num> 20) connect_num = 0;
+    if(connect_num >= 20) connect_num = 19; // Keep within bounds
 
   
   int mac_comp = 0;
@@ -381,7 +401,7 @@ void Espnow::ScanForSlave(void) {
         // Get BSSID => Mac Address of the Slave
         int mac[6];
 
-        if ( 6 == sscanf(BSSIDstr.c_str(), "%x:%x:%x:%x:%x:%x%c",  &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5] ) ) {
+        if ( 6 == sscanf(BSSIDstr.c_str(), "%02x:%02x:%02x:%02x:%02x:%02x",  &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5] ) ) {
           for (int ii = 0; ii < 6; ++ii ) {
             slaves[SlaveCnt].peer_addr[ii] = (uint8_t) mac[ii];
           }

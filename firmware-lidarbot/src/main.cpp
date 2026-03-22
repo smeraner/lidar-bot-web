@@ -17,7 +17,7 @@ void Service(void * pvParameters) {
 
     for(;;) {
         service.Listen();
-        vTaskDelay(2 / portTICK_RATE_MS); 
+        vTaskDelay(pdMS_TO_TICKS(2)); 
     }
     vTaskDelete(NULL);
 }

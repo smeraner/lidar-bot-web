@@ -3,7 +3,6 @@
 
 WebServer server(80);
 WebServer server1(81);
-LidarCar serverLidarCar;
 extern LidarCar lidarcar;
 //uint16_t distance[360];
 extern const char* str;
@@ -58,58 +57,58 @@ void AccessService::GetCoordinates(){
    Serial.println(server.arg(0));
    Serial.println(server.arg(1));
   //LidarCar::ControlWheel(0, 3, 0);
-  //serverLidarCar.ControlWheel(0, 2, 0);
+  //lidarcar.ControlWheel(0, 2, 0);
   server.send(200, "text/html", "");
 }
 void AccessService::stop(){
- serverLidarCar.ControlWheel(0, 0, 0);
+ lidarcar.ControlWheel(0, 0, 0);
  server.send(200, "text/html", "");
 }
 void AccessService::leftfront(){
  //Serial.println("left()");
- serverLidarCar.ControlWheel(-2, 4, 0);
+ lidarcar.ControlWheel(-2, 4, 0);
  server.send(200, "text/html", "");
 }
 void AccessService::leftrear(){
  //Serial.println("left()");
- serverLidarCar.ControlWheel(-2, -4, 0);
+ lidarcar.ControlWheel(-2, -4, 0);
  server.send(200, "text/html", "");
 }
 void AccessService::rightfront(){
  //Serial.println("left()");
- serverLidarCar.ControlWheel(2, 4, 0);
+ lidarcar.ControlWheel(2, 4, 0);
  server.send(200, "text/html", "");
 }
 
 void AccessService::rightrear(){
  //Serial.println("left()");
- serverLidarCar.ControlWheel(2, -4, 0);
+ lidarcar.ControlWheel(2, -4, 0);
  server.send(200, "text/html", "");
 }
 void AccessService::accelerate(){
  //Serial.println("left()");
- serverLidarCar.ControlWheel(-2, 0, 0);
+ lidarcar.ControlWheel(-2, 0, 0);
  server.send(200, "text/html", "");
 }
 void AccessService::reduce(){
  //Serial.println("left()");
- serverLidarCar.ControlWheel(-2, 0, 0);
+ lidarcar.ControlWheel(-2, 0, 0);
  server.send(200, "text/html", "");
 }
 //LidarCar::ControlWheel(int8_t X, int8_t Y, byte A);
 void AccessService::left(){
  //Serial.println("left()");
- serverLidarCar.ControlWheel(-2, 0, 1);
+ lidarcar.ControlWheel(-2, 0, 1);
  server.send(200, "text/html", "");
 }
 void AccessService::right(){
   //Serial.println("right");
-  serverLidarCar.ControlWheel(2, 0, 1);
+  lidarcar.ControlWheel(2, 0, 1);
   server.send(200, "text/html", "");
 }
 void AccessService::backward(){
   //Serial.println("backward");
-  serverLidarCar.ControlWheel(0, -2, 0);
+  lidarcar.ControlWheel(0, -2, 0);
   server.send(200, "text/html", "");
 }
 void AccessService::forward(){
@@ -117,13 +116,13 @@ void AccessService::forward(){
    //Serial.println(server.arg(0));
    //Serial.println(server.arg(1));
   //LidarCar::ControlWheel(0, 3, 0);
-  serverLidarCar.ControlWheel(0, 2, 0);
+  lidarcar.ControlWheel(0, 2, 0);
   server.send(200, "text/html", "");
 }
 void AccessService::shift(){
   //Serial.println("shift()");
   //ControlWheel(1, 1, 0);
-  //serverLidarCar.ControlWheel(0, 0, 0);
+  //lidarcar.ControlWheel(0, 0, 0);
   server.send(200, "text/html", "");
 }
 
@@ -209,7 +208,7 @@ void AccessService::handleRoot() {
     function handleTouchstart(url) {\
         ajax_timer = setInterval(function(){\
             ajax(url);\
-     8}, 100);\
+        }, 100);\
     }\
     function handleTouchend() {\
         clearInterval(ajax_timer);\

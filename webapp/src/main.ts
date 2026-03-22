@@ -21,7 +21,6 @@ let activeBridge: IBridgeTransport = serialBridge;
 
 // === Execution State Management ===
 let _isRunning = false;
-let _aborted = false;
 let _execStartTime = 0;
 let _execTimerInterval: ReturnType<typeof setInterval> | null = null;
 let _execAutoHideTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -311,11 +310,13 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   worker.onmessage = async (e) => {
       const msg = e.data;
       if (msg.type === 'sendCommand') {
-          await activeBridge.sendCommand(...msg.args);
+          await (activeBridge.sendCommand as any)(...msg.args);
       } else if (msg.type === 'sendLedShow') {
           await activeBridge.sendLedShow();
       } else if (msg.type === 'sendLedColor') {
-          await activeBridge.sendLedColor(...msg.args);
+          await (activeBridge.sendLedColor as any)(...msg.args);
+      } else if (msg.type === 'highlightBlock') {
+          workspace.highlightBlock(msg.id);
       } else if (msg.type === 'finished') {
           try { await activeBridge.sendCommand(0, 0, 0); } catch {}
           finishExecution('finished');
@@ -336,7 +337,6 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
 
 function abortExecution() {
   if (!_isRunning) return;
-  _aborted = true;
   if (worker) {
       worker.postMessage({ type: 'abort' });
   }
@@ -344,7 +344,6 @@ function abortExecution() {
 
 function startExecution() {
   _isRunning = true;
-  _aborted = false;
   _execStartTime = Date.now();
 
   // Clear any pending auto-hide
@@ -386,6 +385,7 @@ function startExecution() {
 function finishExecution(status: 'finished' | 'stopped' | 'error') {
   _isRunning = false;
   if (_execTimerInterval) { clearInterval(_execTimerInterval); _execTimerInterval = null; }
+  workspace.highlightBlock(null);
 
   const bar = document.getElementById('executionBar');
   if (bar) {

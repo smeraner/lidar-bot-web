@@ -1,6 +1,9 @@
 import { javascriptGenerator, Order } from 'blockly/javascript';
 
 export function defineGenerators() {
+    javascriptGenerator.STATEMENT_PREFIX = 'await __highlightBlock(%1);\n';
+    javascriptGenerator.addReservedWords('__highlightBlock');
+
     javascriptGenerator.forBlock['lidarbot_move'] = function (block: any) {
         const direction = block.getFieldValue('DIRECTION');
         const speed = block.getFieldValue('SPEED');

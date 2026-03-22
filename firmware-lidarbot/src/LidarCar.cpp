@@ -7,7 +7,7 @@ Rprtrack rprtrack;
 /*!
  * \brief LidarCar::LidarCar
  * \param 
- * - 类初始值
+ * - Initial values for the class
  */
 LidarCar::LidarCar(){
   commandStatus = 0;
@@ -23,7 +23,7 @@ LidarCar::LidarCar(){
 /*!
  * \brief LidarCar::Init
  * \param 
- * - 雷达车初始化
+ * - LidarCar initialization
  */
 void LidarCar::Init(void){
 
@@ -48,7 +48,7 @@ void LidarCar::Init(void){
 /*!
  * \brief LidarCar::LedShow
  * \param 
- * - 灯光展示
+ * - Light show
  */
 void LidarCar::LedShow(void){
 
@@ -90,11 +90,11 @@ void LidarCar::SetColor(byte r, byte g, byte b){
 /*!
  * \brief LidarCar::setLedColor
  * \param 
- *      i   第几个灯  范围0-15
- *      r   颜色 r 值
- *      g   颜色 g 值
- *      b   颜色 b 值
- * - 设置灯的颜色
+ *      i   index of the light (range 0-15)
+ *      r   color Red value
+ *      g   color Green value
+ *      b   color Blue value
+ * - Set the color of a specific light
  */
 void LidarCar::setLedColor(byte i, byte r, byte g, byte b){
   Serial2.write(0xAB);
@@ -107,10 +107,10 @@ void LidarCar::setLedColor(byte i, byte r, byte g, byte b){
 /*!
  * \brief LidarCar::setFrontLedBar
  * \param 
- *      r   颜色 r 值
- *      g   颜色 g 值
- *      b   颜色 b 值
- * - 设置车前灯的颜色
+ *      r   color Red value
+ *      g   color Green value
+ *      b   color Blue value
+ * - Set the color of the front light bar
  */
 void LidarCar::setFrontLedBar(byte r, byte g, byte b)
 {
@@ -123,10 +123,10 @@ void LidarCar::setFrontLedBar(byte r, byte g, byte b)
 /*!
  * \brief LidarCar::setBackLedBar
  * \param 
- *      r   颜色 r 值
- *      g   颜色 g 值
- *      b   颜色 b 值
- * - 设置车后灯的颜色
+ *      r   color Red value
+ *      g   color Green value
+ *      b   color Blue value
+ * - Set the color of the back light bar
  */
 void LidarCar::setBackLedBar( byte r, byte g, byte b)
 {
@@ -139,10 +139,10 @@ void LidarCar::setBackLedBar( byte r, byte g, byte b)
 /*!
  * \brief LidarCar::setLedAll
  * \param 
- *      r   颜色 r 值
- *      g   颜色 g 值
- *      b   颜色 b 值
- * - 设置所有灯的颜色
+ *      r   color Red value
+ *      g   color Green value
+ *      b   color Blue value
+ * - Set the color of all lights
  */
 void LidarCar::setLedAll( byte r, byte g, byte b)
 {
@@ -155,13 +155,12 @@ void LidarCar::setLedAll( byte r, byte g, byte b)
 /*!
  * \brief LidarCar::setServo0Angle
  * \param 
- *     angle   角度范围 0 - 180 
- * - 设置0号舵机的角度
+ *     angle   angle range 0 - 180 
+ * - Set the angle of servo 0
  */
 void LidarCar::setServo0Angle(uint8_t angle)
 {
   if(angle > 180) angle = 180;
-  if(angle < 0) angle = 0;
   Serial2.write(0xAF);
   Serial2.write(angle);
   Serial2.write(0x55);
@@ -170,13 +169,12 @@ void LidarCar::setServo0Angle(uint8_t angle)
 /*!
  * \brief LidarCar::setServo1Angle
  * \param 
- *     angle   角度范围 0 - 180
- * - 设置1号舵机的角度
+ *     angle   angle range 0 - 180
+ * - Set the angle of servo 1
  */
 void LidarCar::setServo1Angle(uint8_t angle)// angle: 0 ~ 180
 {
   if(angle > 180) angle = 180;
-  if(angle < 0) angle = 0;
   Serial2.write(0xB0);
   Serial2.write(angle);
   Serial2.write(0x55);
@@ -186,10 +184,10 @@ void LidarCar::setServo1Angle(uint8_t angle)// angle: 0 ~ 180
 /*!
  * \brief LidarCar::ControlWheel
  * \param 
- *      X   范围 -7 - 7
- *      Y   范围 -7 - 7
- *      A   范围 0/1  横向移动标志，为1时车可以向左右横向移动，
- * - 车方向及其速度控制
+ *      X   range -7 to 7
+ *      Y   range -7 to 7
+ *      A   range 0/1 lateral movement flag, when 1 the car can move sideways left/right
+ * - Car direction and speed control
  */
 void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A, uint16_t durationMs)// X, Y, A: -7 ~ 7
 {  
@@ -200,9 +198,9 @@ void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A, uint16_t durationMs)// X
     _stopTime = 0;
   }
 
-  //！将参数通过controlMap表格转化为四个电机的参数值
-  //! controlMapX 为横向移动 时数据表格
-  //！controlMap  为正常移动 时数据表格
+  // Convert parameters to four motor values using the controlMap table
+  //! controlMapX is the data table for lateral movement
+  //! controlMap is the data table for normal movement
   if (A == 0x01){
     wheelPowerA = controlMapX[7 + Y][X + 7];
     wheelPowerB = controlMapY[7 + Y][X + 7];
@@ -215,7 +213,7 @@ void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A, uint16_t durationMs)// X
     wheelPowerD = controlMap[-Y + 7][14 - X - 7];
   }
    
-  //通过串口下达指令
+  // Send commands via serial
   Serial2.write(0xAA);
   Serial2.write(wheelPowerA);
   Serial2.write(wheelPowerB);
@@ -229,7 +227,7 @@ void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A, uint16_t durationMs)// X
     Serial.println("debug:wheel_power STOP (0,0,0,0)");
   }
 
-  //灯光设置，灯光随着车的方向速度 变化而变化
+  // Light setting, lights change according to car direction and speed
   if(Y>0){
     if (A == 0x01)
      setLedAll(Y,0,0);
@@ -255,11 +253,11 @@ void LidarCar::Update(void) {
 /*!
  * \brief LidarCar::MapDisplay
  * \param 
- * - 雷达扫描的地图处理及其显示
+ * - Processing and display of radar scanned map
  */
 void LidarCar::MapDisplay(void){
 
-  //每帧数据长度/雷达旋转速度/数据帧数
+  // Data length per frame / Lidar rotation speed / Number of data frames
   M5.Lcd.setCursor(0, 0, 2);
   M5.Lcd.print(dataLength);
   M5.Lcd.print("D/");
@@ -270,8 +268,8 @@ void LidarCar::MapDisplay(void){
   
   for(int i = 0; i < 45; i++)
   { 
-    //Cortrol_flag 模式为迷宫时标志
-    //当成功获取到一帧数据，标志置位
+    // Control_flag: flag for maze mode
+    // Flag set when a data frame is successfully retrieved
     if (showAngle >=  359){
        Cortrol_flag = true;
        count++;
@@ -282,10 +280,10 @@ void LidarCar::MapDisplay(void){
     else
       showAngle++;
     //Serial.print("showAngle = ");Serial.println(showAngle);
-    // distance[showAngle]为雷达扫描的直线距离，将其通过cos和sin分解为x y方向上的距离
+    // distance[showAngle] is the linear distance scanned by lidar, decompose it into x and y directions using cos and sin
     disX[showAngle] = ( 80 + (distance[showAngle] / 70) * cos(3.14159 * showAngle / 180 + 0.13))*2;
     disY[showAngle] = (100 + (distance[showAngle] / 70) * sin(3.14159 * showAngle / 180 + 0.13))*2;
-    //！显示屏显示
+    // Display on screen
     M5.Lcd.drawPixel(oldDisX[showAngle] , oldDisY[showAngle], BLACK);
     if(distance[showAngle] == 250)
       M5.Lcd.drawPixel(disX[showAngle] , disY[showAngle], BLUE);
@@ -307,7 +305,7 @@ void LidarCar::MapDisplay(void){
     mapdata[i * 4 + 3] = 236;
     #endif
 	
-	  //迷宫有效数据获取  获取角度为180到360的数据
+	  // Maze valid data acquisition: Get data for angles 180 to 360
 	  if((showAngle >= 180) && (showAngle <= 360)){
       if((distance[showAngle] == 250)||(distance[showAngle] == 0)||(distance[showAngle] >= 10000))
       {
@@ -323,12 +321,12 @@ void LidarCar::MapDisplay(void){
        
    }
 
-  //得到雷达数据
+  // Get lidar data
   GetData();
 
 }
 
-//！摄像头模块
+// Camera module
 void LidarCar::CarCamera(void){
 
    Serial.print(" rent_pp = ");
@@ -429,7 +427,7 @@ void LidarCar::CarCamera(void){
 }
 
 
-//! 循迹模块
+//! Line tracking module
 void LidarCar::TrackControl(void){
   
   rprtrack.SensorStatus();
@@ -448,7 +446,7 @@ void LidarCar::TrackControl(void){
 }
 
 
-//!迷宫模式
+//! Maze mode
 void LidarCar::CarMaze(void){
 if((Cortrol_flag) && (count >= 10))
   {
@@ -460,10 +458,10 @@ if((Cortrol_flag) && (count >= 10))
     ControlWheel(motor_out, motor_y_out, 0); 
 }
 
-//！迷宫处理
+// Maze processing
 void LidarCar::CarCortrol(void)
 {    
-    //！判断左 右 前 距离
+    // Judge left, right, and front distances
     float left_line = 0,right_line = 0,front_line = 0;
     int buf = 0; 
     
@@ -480,7 +478,7 @@ void LidarCar::CarCortrol(void)
     }
    // Serial.print("left_line  count = "),Serial.println(count);
     if(count == 0)count = 1;
-    //！左边距离
+    // Left distance
     left_line = (float)buf/count;
  
     buf = 0;
@@ -495,7 +493,7 @@ void LidarCar::CarCortrol(void)
       
     }//Serial.print("front_line  count = "),Serial.println(count);
     if(count == 0)count = 1;
-    //！前边距离
+    // Front distance
     front_line = (float)buf/count;
 
     count = 0;
@@ -509,17 +507,16 @@ void LidarCar::CarCortrol(void)
        }
     }//Serial.print("right_line  count = "),Serial.println(count);
     if(count == 0)count = 1;
-    //！右边距离
+    // Right distance
     right_line = buf /count;
 
-    //！pid计算
-    /* pid量化公式为
+    /* PID quantization formula is
     *      out = kp * error + kd * (error - last_error)
-    *      此处仅使用kp值，kd模式为0， 可以尝试加入kd值，
-    *      pid的基础概念： http://blog.sina.cn/dpool/blog/s/blog_80f7b8e90101ikk8.html?md=gd
+    *      Only kp value is used here, kd mode is 0, you can try adding kd value
+    *      Basic PID concept: http://blog.sina.cn/dpool/blog/s/blog_80f7b8e90101ikk8.html?md=gd
     */ 
 
-    //！通过左右距离调整kp值
+    // Adjust kp value based on left and right distances
     float kp = 0.4;motor_y_out = 7;
     if((right_line <= 1.0) || (left_line <= 1.0))
     {
@@ -532,21 +529,21 @@ void LidarCar::CarCortrol(void)
       motor_y_out = 3;
     }
     
-    //!计算出当前道路的位置偏差
+    //! Calculate the position deviation of the current road
     float error_line = (left_line + right_line)/2.0 - 157.80;
     if((left_line == 0) || (right_line == 0))error_line = last_error_line;
     last_error_line = error_line;
     //if(error_line)
     //common
     int ret = 0;
-    //！判断是否为死区
+    // Check for dead zone (dead end)
     ret = MazaCom(error_line ,left_line,right_line,front_line) ;
     if(!ret){
       if(go_flag)
     motor_out =  -kp  * error_line/2;
     else
     motor_out =  kp  * error_line;
-    //！输出
+    // Output
     if(motor_out >= 4.0)motor_out = 4.0;
     else if(motor_out <= -4.0)motor_out = -4.0;
     ControlWheel(motor_out,motor_y_out, 0);
@@ -554,7 +551,7 @@ void LidarCar::CarCortrol(void)
 }
 
 
-//！死区检测，检测前面无路可走，掉头返回
+// Dead zone detection: detect no way forward, turn around and return
 int LidarCar::MazaCom(float error_line,float left_line,float right_line,float front_line)
 {
    //Serial.print(" error_line = ");Serial.print(error_line);Serial.print(" left_line = ");Serial.print(left_line);Serial.print(" right_line = ");Serial.print(right_line);Serial.print(" front_line = ");Serial.println(front_line);
@@ -588,7 +585,7 @@ int LidarCar::MazaCom(float error_line,float left_line,float right_line,float fr
 }
 
 
-//!雷达车模式控制
+//! Lidar car mode control
 void LidarCar::ControlMode(void){
 
   //!mode flag
@@ -606,7 +603,7 @@ void LidarCar::ControlMode(void){
   }
 }
 
-//！雷达数据获取
+// Lidar data acquisition
 void LidarCar::GetData(void){
 
   while(Serial1.available()){
