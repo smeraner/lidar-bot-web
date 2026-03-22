@@ -53,9 +53,10 @@ export class BluetoothBridge {
             await this.requestStatus();
 
             console.log('Connected to LidarBot-Bridge via BLE');
-        } catch (e) {
+        } catch (e: any) {
             this._isConnected = false;
             console.error('BLE Connection Failed', e);
+            alert(`BLE Connection Failed: ${e?.message || e}`);
         }
     }
 

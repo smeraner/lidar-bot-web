@@ -250,6 +250,11 @@ window.addEventListener('click', () => {
 const usbDropdownBtn = document.getElementById('connectBtn') as HTMLButtonElement;
 usbDropdownBtn?.addEventListener('click', async (e) => {
     e.stopPropagation();
+    if (!navigator.serial) {
+        alert("Web Serial API is not supported in this browser or requires a secure context (HTTPS / localhost).");
+        return;
+    }
+    
     if (serialBridge.isConnected) {
         await serialBridge.disconnect();
     } else {
@@ -270,6 +275,11 @@ usbDropdownBtn?.addEventListener('click', async (e) => {
 const bleDropdownBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
 bleDropdownBtn?.addEventListener('click', async (e) => {
     e.stopPropagation();
+    if (!navigator.bluetooth) {
+        alert("Web Bluetooth API is not supported in this browser or requires a secure context (HTTPS / localhost).");
+        return;
+    }
+
     if (bluetoothBridge.isConnected) {
         await bluetoothBridge.disconnect();
     } else {

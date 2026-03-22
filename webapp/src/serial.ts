@@ -54,9 +54,10 @@ export class SerialBridge implements IBridgeTransport {
             await this.requestStatus();
             
             console.log("Connected to ESP32 Bridge");
-        } catch (e) {
+        } catch (e: any) {
             this._isConnected = false;
             console.error("Serial Connection Failed", e);
+            alert(`Serial Connection Failed: ${e?.message || e}`);
         }
     }
 
