@@ -12,6 +12,7 @@
     "@anthropic-ai/tokenizer": "^0.0.4",
     "@types/w3c-web-serial": "^1.0.8",
     "@types/web-bluetooth": "^0.0.21",
+    "@vitejs/plugin-basic-ssl": "^2.2.0",
     "typescript": "~5.9.3",
     "vite": "^8.0.1"
   },
