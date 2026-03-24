@@ -498,3 +498,10 @@ trayButtons.lidar?.addEventListener('click', () => togglePanel('lidar'));
 document.getElementById('resetSimBtn')?.addEventListener('click', () => {
   simulationView?.reset();
 });
+
+// Auto-expand sidebar on large screens
+window.addEventListener('load', () => {
+  if (window.innerWidth >= 1200) {
+    togglePanel('sim');
+  }
+});

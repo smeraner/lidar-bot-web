@@ -443,6 +443,8 @@ main {
   justify-content: space-between;
   align-items: center;
   background: rgba(255, 255, 255, 0.02);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .panel-header h3 {
@@ -464,6 +466,17 @@ main {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.premium-btn.sm {
+  padding: 6px 12px;
+  font-size: 11px;
 }
 
 .text-btn {

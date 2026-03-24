@@ -33,7 +33,6 @@
             </div>
           </div>
           <button id="pairBtn" class="premium-btn" data-i18n="pair" style="display: none;">Pair Robot</button>
-          <button id="runSimBtn" class="premium-btn" data-i18n="run_sim">Run Simulation</button>
           <button id="runLiveBtn" class="premium-btn primary" data-i18n="run_live" disabled>Run Live</button>
           <button id="stopBtn" class="premium-btn danger" style="display: none;" data-i18n="stop_program">Stop</button>
         </div>
@@ -61,7 +60,10 @@
             <div id="simulationPanel" class="panel hidden">
               <div class="panel-header">
                 <h3 data-i18n="simulation">Simulation</h3>
-                <button id="resetSimBtn" class="text-btn" data-i18n="reset">Reset</button>
+                <div class="panel-actions">
+                  <button id="runSimBtn" class="premium-btn sm" data-i18n="run_sim">Run Simulation</button>
+                  <button id="resetSimBtn" class="text-btn" data-i18n="reset">Reset</button>
+                </div>
               </div>
               <div class="canvas-wrap">
                 <canvas id="simulationCanvas"></canvas>
