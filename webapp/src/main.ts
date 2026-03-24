@@ -61,16 +61,55 @@ bluetoothBridge.onRobotStatus(handleRobotStatus);
 const toolbox = `
   <xml xmlns="https://developers.google.com/blockly/xml">
     <category name="${t('movement')}" colour="210">
-      <block type="lidarbot_move"></block>
+      <block type="lidarbot_move">
+        <value name="SPEED">
+          <shadow type="math_number">
+            <field name="NUM">50</field>
+          </shadow>
+        </value>
+        <value name="DURATION">
+          <shadow type="math_number">
+            <field name="NUM">1000</field>
+          </shadow>
+        </value>
+      </block>
       <block type="lidarbot_stop"></block>
     </category>
     <category name="${t('lights')}" colour="290">
-      <block type="lidarbot_led_show"></block>
+      <block type="lidarbot_led_show">
+        <value name="DURATION">
+          <shadow type="math_number">
+            <field name="NUM">1000</field>
+          </shadow>
+        </value>
+      </block>
       <block type="lidarbot_set_color"></block>
     </category>
     <category name="${t('sensing')}" colour="160">
-      <block type="lidarbot_get_distance"></block>
-      <block type="lidarbot_is_obstacle"></block>
+      <block type="lidarbot_get_distance">
+        <value name="ANGLE">
+          <shadow type="math_number">
+            <field name="NUM">0</field>
+          </shadow>
+        </value>
+      </block>
+      <block type="lidarbot_is_obstacle">
+        <value name="START">
+          <shadow type="math_number">
+            <field name="NUM">0</field>
+          </shadow>
+        </value>
+        <value name="END">
+          <shadow type="math_number">
+            <field name="NUM">0</field>
+          </shadow>
+        </value>
+        <value name="THRESHOLD">
+          <shadow type="math_number">
+            <field name="NUM">200</field>
+          </shadow>
+        </value>
+      </block>
     </category>
     <category name="${t('logic')}" colour="210">
       <block type="controls_if"></block>

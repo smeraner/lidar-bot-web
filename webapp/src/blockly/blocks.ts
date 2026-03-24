@@ -12,12 +12,16 @@ export function defineBlocks() {
                     [t('backward'), "BACKWARD"],
                     [t('left'), "LEFT"],
                     [t('right'), "RIGHT"]
-                ]), "DIRECTION")
-                .appendField(t('speed'))
-                .appendField(new Blockly.FieldNumber(50, 0, 100), "SPEED")
-                .appendField(t('duration'))
-                .appendField(new Blockly.FieldNumber(1000, 0, 10000), "DURATION")
+                ]), "DIRECTION");
+            this.appendValueInput("SPEED")
+                .setCheck("Number")
+                .appendField(t('speed'));
+            this.appendValueInput("DURATION")
+                .setCheck("Number")
+                .appendField(t('duration'));
+            this.appendDummyInput()
                 .appendField(t('ms'));
+            this.setInputsInline(true);
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(230);
@@ -28,10 +32,13 @@ export function defineBlocks() {
         init: function () {
             this.appendDummyInput()
                 .appendField(t('led_show'))
-                .appendField(new FieldColour('#ffffff'), 'COLOR')
-                .appendField(t('duration'))
-                .appendField(new Blockly.FieldNumber(1000, 0, 10000), "DURATION")
+                .appendField(new FieldColour('#ffffff'), 'COLOR');
+            this.appendValueInput("DURATION")
+                .setCheck("Number")
+                .appendField(t('duration'));
+            this.appendDummyInput()
                 .appendField(t('ms'));
+            this.setInputsInline(true);
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(290);
@@ -51,9 +58,9 @@ export function defineBlocks() {
 
     Blockly.Blocks['lidarbot_get_distance'] = {
         init: function () {
-            this.appendDummyInput()
-                .appendField(t('distance'))
-                .appendField(new Blockly.FieldNumber(0, 0, 359), "ANGLE");
+            this.appendValueInput("ANGLE")
+                .setCheck("Number")
+                .appendField(t('distance'));
             this.setOutput(true, "Number");
             this.setColour(160);
         }
@@ -61,13 +68,16 @@ export function defineBlocks() {
 
     Blockly.Blocks['lidarbot_is_obstacle'] = {
         init: function () {
-            this.appendDummyInput()
-                .appendField(t('is_obstacle'))
-                .appendField(new Blockly.FieldNumber(0, 0, 359), "START")
-                .appendField(t('and'))
-                .appendField(new Blockly.FieldNumber(0, 0, 359), "END")
-                .appendField(t('threshold'))
-                .appendField(new Blockly.FieldNumber(200, 0, 2000), "THRESHOLD");
+            this.appendValueInput("START")
+                .setCheck("Number")
+                .appendField(t('is_obstacle'));
+            this.appendValueInput("END")
+                .setCheck("Number")
+                .appendField(t('and'));
+            this.appendValueInput("THRESHOLD")
+                .setCheck("Number")
+                .appendField(t('threshold'));
+            this.setInputsInline(true);
             this.setOutput(true, "Boolean");
             this.setColour(160);
         }
