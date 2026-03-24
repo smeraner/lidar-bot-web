@@ -41,7 +41,6 @@ const handleLidarData = (points: { angle: number, distance: number }[]) => {
   if (worker) {
     worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
   }
-  updateUI();
 };
 
 const handleRobotStatus = () => {
@@ -122,12 +121,22 @@ workspace.addChangeListener((event) => {
 });
 
 function updateUI() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n') as any;
-    if (key) {
-      el.textContent = t(key);
-    }
-  });
+  const lang = getLanguage();
+  // ── Language / i18n ──
+  if ((window as any)._lastUILang !== lang) {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n') as any;
+      if (key) {
+        const translated = t(key);
+        if (el.textContent !== translated) el.textContent = translated;
+      }
+    });
+    // Update toolbox only on language change
+    workspace.updateToolbox(toolbox);
+    // Update document title
+    document.title = t('title');
+    (window as any)._lastUILang = lang;
+  }
 
   // ── Consolidated Connection Buttons ──
   const mainConnectBtn = document.getElementById('mainConnectBtn') as HTMLButtonElement;
@@ -135,85 +144,62 @@ function updateUI() {
   const bleDropdownBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
 
   if (mainConnectBtn) {
-    if (serialBridge.isConnected || bluetoothBridge.isConnected) {
-      mainConnectBtn.textContent = t('disconnect') + " ▾";
-      mainConnectBtn.classList.add('connected');
-    } else {
-      mainConnectBtn.textContent = t('connect') + " ▾";
-      mainConnectBtn.classList.remove('connected');
-    }
+    const isConnected = serialBridge.isConnected || bluetoothBridge.isConnected;
+    const newText = (isConnected ? t('disconnect') : t('connect')) + " ▾";
+    if (mainConnectBtn.textContent !== newText) mainConnectBtn.textContent = newText;
+    mainConnectBtn.classList.toggle('connected', isConnected);
   }
 
   if (usbDropdownBtn) {
-    if (serialBridge.isConnected) {
-      usbDropdownBtn.textContent = "🔌 " + t('disconnect'); 
-      usbDropdownBtn.classList.add('connected');
-    } else {
-      usbDropdownBtn.textContent = "🔌 " + t('bridge_usb');
-      usbDropdownBtn.classList.remove('connected');
-    }
+    const isConnected = serialBridge.isConnected;
+    const newText = isConnected ? "🔌 " + t('disconnect') : "🔌 " + t('bridge_usb');
+    if (usbDropdownBtn.textContent !== newText) usbDropdownBtn.textContent = newText;
+    usbDropdownBtn.classList.toggle('connected', isConnected);
     usbDropdownBtn.classList.toggle('active', activeBridge === serialBridge);
   }
 
   if (bleDropdownBtn) {
-    if (bluetoothBridge.isConnected) {
-      bleDropdownBtn.textContent = "🔵 " + t('disconnect_bt'); 
-      bleDropdownBtn.classList.add('connected');
-    } else {
-      bleDropdownBtn.textContent = "🔵 " + t('bridge_bt');
-      bleDropdownBtn.classList.remove('connected');
-    }
+    const isConnected = bluetoothBridge.isConnected;
+    const newText = isConnected ? "🔵 " + t('disconnect_bt') : "🔵 " + t('bridge_bt');
+    if (bleDropdownBtn.textContent !== newText) bleDropdownBtn.textContent = newText;
+    bleDropdownBtn.classList.toggle('connected', isConnected);
     bleDropdownBtn.classList.toggle('active', activeBridge === bluetoothBridge);
   }
 
   // Update status indicators — reflect the *active* bridge
   const bridgeStatus = document.getElementById('bridgeStatus');
   if (bridgeStatus) {
-    if (activeBridge.isConnected) {
-      bridgeStatus.classList.add('connected');
-    } else {
-      bridgeStatus.classList.remove('connected');
-    }
+    bridgeStatus.classList.toggle('connected', activeBridge.isConnected);
   }
 
   const robotStatus = document.getElementById('robotStatus');
   const robotStatusText = document.getElementById('robotStatusText');
   if (robotStatus) {
-    robotStatus.classList.remove('connected', 'searching', 'disconnected');
     const status = activeBridge.robotStatus;
+    robotStatus.classList.remove('connected', 'searching', 'disconnected');
     robotStatus.classList.add(status);
     
     if (robotStatusText) {
-      if (status === 'connected') robotStatusText.textContent = t('robot_connected');
-      else if (status === 'searching') robotStatusText.textContent = t('robot_searching');
-      else robotStatusText.textContent = t('robot_disconnected');
+      const statusLabel = status === 'connected' ? t('robot_connected') : 
+                          (status === 'searching' ? t('robot_searching') : t('robot_disconnected'));
+      if (robotStatusText.textContent !== statusLabel) robotStatusText.textContent = statusLabel;
     }
   }
   
   // Update visibility of Pair button
   const pairBtn = document.getElementById('pairBtn');
   if (pairBtn) {
-    if (activeBridge.isConnected && activeBridge.robotStatus !== 'connected') {
-      pairBtn.style.display = 'inline-block';
-    } else {
-      pairBtn.style.display = 'none';
-    }
+    const newDisplay = (activeBridge.isConnected && activeBridge.robotStatus !== 'connected') ? 'inline-block' : 'none';
+    if (pairBtn.style.display !== newDisplay) pairBtn.style.display = newDisplay;
   }
 
   // Update run buttons state
-  const runLiveBtn = document.getElementById('runLiveBtn') as HTMLButtonElement;
-  const runSimBtn = document.getElementById('runSimBtn') as HTMLButtonElement;
-  
   if (!_isRunning) {
+    const runLiveBtn = document.getElementById('runLiveBtn') as HTMLButtonElement;
     if (runLiveBtn) runLiveBtn.disabled = activeBridge.robotStatus !== 'connected';
-    if (runSimBtn) runSimBtn.disabled = false; // Simulation always available
+    const runSimBtn = document.getElementById('runSimBtn') as HTMLButtonElement;
+    if (runSimBtn) runSimBtn.disabled = false;
   }
-
-  // Update document title
-  document.title = t('title');
-
-  // Reload toolbox to reflect labels
-  workspace.updateToolbox(toolbox);
 }
 
 const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
@@ -504,32 +490,37 @@ document.getElementById('addObstacleBtn')?.addEventListener('click', () => {
 });
 
 // Auto-expand sidebar on large screens
-window.addEventListener('load', () => {
-  if (window.innerWidth >= 1200) {
-    togglePanel('sim');
-  }
-});
+if (window.innerWidth >= 1200) {
+  togglePanel('sim');
+}
 
 // Virtual Lidar Loop
+let lastSimDistances: number[] = [];
 function virtualLidarLoop() {
   if (simulationView && !activeBridge.isConnected) {
     const distances = simulationView.getVirtualLidarData();
-    // Update lidarStore with simulated data
-    // We convert it to the expected points format for consistency
-    const points = distances.map((d, i) => ({ angle: i, distance: d }));
-    lidarStore.update(points);
     
-    if (lidarView) {
-      lidarView.update(distances);
+    // Only update if distances changed significantly
+    const distSum = distances.reduce((a, b) => a + b, 0);
+    const lastDistSum = lastSimDistances.reduce((a, b) => a + b, 0);
+    
+    if (distSum !== lastDistSum) {
+      lastSimDistances = [...distances];
+      const points = distances.map((d, i) => ({ angle: i, distance: d }));
+      lidarStore.update(points);
+      
+      if (lidarView) {
+        lidarView.update(distances);
+      }
+      if (simulationView) {
+        simulationView.setLidarData(distances);
+      }
+      if (worker) {
+        worker.postMessage({ type: 'lidar_update', distances });
+      }
     }
-    if (simulationView) {
-      simulationView.setLidarData(distances);
-    }
-    if (worker) {
-      worker.postMessage({ type: 'lidar_update', distances });
-    }
-    updateUI();
+    updateUI(); // Still call to update connection status etc
   }
-  requestAnimationFrame(virtualLidarLoop);
+  setTimeout(virtualLidarLoop, 100); // 10Hz is enough for Lidar
 }
 virtualLidarLoop();
