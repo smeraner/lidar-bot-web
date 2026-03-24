@@ -7,7 +7,8 @@ export const translations = {
         connect: 'Connect LidarBot',
         connected: 'Connected',
         disconnect: 'Disconnect',
-        run: 'Run Program',
+        run_live: 'Run Live',
+        run_sim: 'Run Simulation',
         move: 'move',
         stop: 'stop',
         forward: 'forward',
@@ -44,14 +45,18 @@ export const translations = {
         connect_bt: '\u{1F535} Bluetooth',
         disconnect_bt: '\u{1F534} Disconnect BT',
         bridge_usb: 'USB',
-        bridge_bt: 'BLE'
+        bridge_bt: 'BLE',
+        simulation: 'Simulation',
+        lidar: 'Lidar',
+        reset: 'Reset'
     },
     de: {
         title: 'LidarBot Steuerung',
         connect: 'LidarBot verbinden',
         connected: 'Verbunden',
         disconnect: 'Trennen',
-        run: 'Programm ausführen',
+        run_live: 'Live Ausführen',
+        run_sim: 'Simulation Ausführen',
         move: 'bewegen',
         stop: 'stoppen',
         forward: 'vorwärts',
@@ -88,7 +93,10 @@ export const translations = {
         connect_bt: '\u{1F535} Bluetooth',
         disconnect_bt: '\u{1F534} BT Trennen',
         bridge_usb: 'USB',
-        bridge_bt: 'BLE'
+        bridge_bt: 'BLE',
+        simulation: 'Simulation',
+        lidar: 'Lidar',
+        reset: 'Zurücksetzen'
     }
 };
 

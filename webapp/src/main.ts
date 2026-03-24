@@ -8,6 +8,7 @@ import { defineGenerators } from './blockly/generator';
 import { javascriptGenerator } from 'blockly/javascript';
 import { t, setLanguage, getLanguage, type Language } from './i18n';
 import { LidarView } from './lidarView';
+import { SimulationView } from './simulation';
 import ExecutorWorker from './executor.worker?worker';
 import './style.css';
 
@@ -27,11 +28,15 @@ let _execAutoHideTimeout: ReturnType<typeof setTimeout> | null = null;
 
 let worker: Worker | null = null;
 let lidarView: LidarView | null = null;
+let simulationView: SimulationView | null = null;
 
 const handleLidarData = (points: { angle: number, distance: number }[]) => {
   lidarStore.update(points);
   if (lidarView) {
     lidarView.update(lidarStore.getAllDistances());
+  }
+  if (simulationView) {
+    simulationView.setLidarData(lidarStore.getAllDistances());
   }
   if (worker) {
     worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
@@ -141,7 +146,7 @@ function updateUI() {
 
   if (usbDropdownBtn) {
     if (serialBridge.isConnected) {
-      usbDropdownBtn.textContent = "🔌 " + t('disconnect'); // or t('bridge_usb') + " " + t('disconnect')
+      usbDropdownBtn.textContent = "🔌 " + t('disconnect'); 
       usbDropdownBtn.classList.add('connected');
     } else {
       usbDropdownBtn.textContent = "🔌 " + t('bridge_usb');
@@ -195,10 +200,13 @@ function updateUI() {
     }
   }
 
-  // Update run button state
-  const runBtn = document.getElementById('runBtn') as HTMLButtonElement;
-  if (runBtn && !_isRunning) {
-    runBtn.disabled = activeBridge.robotStatus !== 'connected';
+  // Update run buttons state
+  const runLiveBtn = document.getElementById('runLiveBtn') as HTMLButtonElement;
+  const runSimBtn = document.getElementById('runSimBtn') as HTMLButtonElement;
+  
+  if (!_isRunning) {
+    if (runLiveBtn) runLiveBtn.disabled = activeBridge.robotStatus !== 'connected';
+    if (runSimBtn) runSimBtn.disabled = false; // Simulation always available
   }
 
   // Update document title
@@ -214,16 +222,10 @@ if (languageSelect) {
   languageSelect.addEventListener('change', (e) => {
     setLanguage((e.target as HTMLSelectElement).value as Language);
     
-    // Save current blocks
     const state = Blockly.serialization.workspaces.save(workspace);
-    
-    // Redefine blocks with new labels
     defineBlocks();
-    
-    // Clear and reload workspace to force block re-initialization with new labels
     workspace.clear();
     Blockly.serialization.workspaces.load(state, workspace);
-    
     updateUI();
   });
 }
@@ -239,7 +241,6 @@ mainConnectBtn?.addEventListener('click', (e) => {
     updateUI();
 });
 
-// Close dropdown when clicking elsewhere
 window.addEventListener('click', () => {
   mainConnectBtn?.parentElement?.classList.remove('active');
 });
@@ -255,7 +256,6 @@ usbDropdownBtn?.addEventListener('click', async (e) => {
     if (serialBridge.isConnected) {
         await serialBridge.disconnect();
     } else {
-        // Disconnect BLE if active
         if (bluetoothBridge.isConnected) {
             await bluetoothBridge.disconnect();
         }
@@ -264,7 +264,6 @@ usbDropdownBtn?.addEventListener('click', async (e) => {
           setActiveBridge(serialBridge);
         }
     }
-    // Close dropdown
     mainConnectBtn?.parentElement?.classList.remove('active');
     updateUI();
 });
@@ -280,7 +279,6 @@ bleDropdownBtn?.addEventListener('click', async (e) => {
     if (bluetoothBridge.isConnected) {
         await bluetoothBridge.disconnect();
     } else {
-        // Disconnect USB if active
         if (serialBridge.isConnected) {
             await serialBridge.disconnect();
         }
@@ -289,7 +287,6 @@ bleDropdownBtn?.addEventListener('click', async (e) => {
           setActiveBridge(bluetoothBridge);
         }
     }
-    // Close dropdown
     mainConnectBtn?.parentElement?.classList.remove('active');
     updateUI();
 });
@@ -298,42 +295,65 @@ document.getElementById('pairBtn')?.addEventListener('click', async () => {
     await activeBridge.pair();
 });
 
-document.getElementById('runBtn')?.addEventListener('click', async () => {
+let _isLiveRun = false;
+
+async function runProgram(isLive: boolean) {
   if (_isRunning) return;
+  _isLiveRun = isLive;
+
+  // Initialize simulation view if needed
+  if (!simulationView) {
+    simulationView = new SimulationView('simulationCanvas');
+  }
+
+  // Always reset simulation for a new run
+  simulationView.reset();
+
   startExecution();
 
   const code = javascriptGenerator.workspaceToCode(workspace);
-  
+
   if (worker) worker.terminate();
   worker = new ExecutorWorker();
-  
+
   worker.onmessage = async (e) => {
       const msg = e.data;
       if (msg.type === 'sendCommand') {
-          await (activeBridge.sendCommand as any)(...msg.args);
+          console.log("Main: Received sendCommand from worker", msg.args);
+          // Forward to real robot only if live
+          if (_isLiveRun) {
+            await (activeBridge.sendCommand as any)(...msg.args);
+          }
+          // Always forward to simulation
+          if (simulationView) {
+            simulationView.updateCommand(...(msg.args as [number, number, number, number]));
+          } else {
+            console.warn("Main: simulationView is not initialized");
+          }
       } else if (msg.type === 'sendLedShow') {
-          await activeBridge.sendLedShow();
+          if (_isLiveRun) await activeBridge.sendLedShow();
       } else if (msg.type === 'sendLedColor') {
-          await (activeBridge.sendLedColor as any)(...msg.args);
+          if (_isLiveRun) await (activeBridge.sendLedColor as any)(...msg.args);
       } else if (msg.type === 'highlightBlock') {
           workspace.highlightBlock(msg.id);
       } else if (msg.type === 'finished') {
-          try { await activeBridge.sendCommand(0, 0, 0); } catch {}
+          if (_isLiveRun) try { await activeBridge.sendCommand(0, 0, 0); } catch {}
           finishExecution('finished');
       } else if (msg.type === 'stopped') {
-          try { await activeBridge.sendCommand(0, 0, 0); } catch {}
+          if (_isLiveRun) try { await activeBridge.sendCommand(0, 0, 0); } catch {}
           finishExecution('stopped');
       } else if (msg.type === 'error') {
           console.error("Worker error:", msg.error);
-          try { await activeBridge.sendCommand(0, 0, 0); } catch {}
+          if (_isLiveRun) try { await activeBridge.sendCommand(0, 0, 0); } catch {}
           finishExecution('error');
       }
   };
-  
-  // Provide initial lidar state
+
   worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
   worker.postMessage({ type: 'run', code });
-});
+}
+document.getElementById('runLiveBtn')?.addEventListener('click', () => runProgram(true));
+document.getElementById('runSimBtn')?.addEventListener('click', () => runProgram(false));
 
 function abortExecution() {
   if (!_isRunning) return;
@@ -346,25 +366,21 @@ function startExecution() {
   _isRunning = true;
   _execStartTime = Date.now();
 
-  // Clear any pending auto-hide
   if (_execAutoHideTimeout) { clearTimeout(_execAutoHideTimeout); _execAutoHideTimeout = null; }
 
-  // Show execution bar
   const bar = document.getElementById('executionBar');
   if (bar) {
     bar.classList.remove('hidden', 'status-finished', 'status-stopped', 'status-error');
     bar.classList.add('status-running');
   }
 
-  // Update icons and text
   const icon = document.getElementById('execIcon');
   const text = document.getElementById('execText');
   const timer = document.getElementById('execTimer');
   if (icon) icon.textContent = '⏳';
-  if (text) text.textContent = t('running_program');
+  if (text) text.textContent = _isLiveRun ? t('running_program') : t('run_sim');
   if (timer) timer.textContent = '0.0s';
 
-  // Start timer
   _execTimerInterval = setInterval(() => {
     if (timer) {
       const elapsed = ((Date.now() - _execStartTime) / 1000).toFixed(1);
@@ -372,13 +388,13 @@ function startExecution() {
     }
   }, 100);
 
-  // Update buttons
-  const runBtn = document.getElementById('runBtn') as HTMLButtonElement;
+  const runLiveBtn = document.getElementById('runLiveBtn') as HTMLButtonElement;
+  const runSimBtn = document.getElementById('runSimBtn') as HTMLButtonElement;
   const stopBtn = document.getElementById('stopBtn');
-  if (runBtn) runBtn.disabled = true;
+  if (runLiveBtn) runLiveBtn.disabled = true;
+  if (runSimBtn) runSimBtn.disabled = true;
   if (stopBtn) stopBtn.style.display = 'inline-flex';
 
-  // Resize Blockly to account for bar height change
   setTimeout(() => Blockly.svgResize(workspace), 400);
 }
 
@@ -406,13 +422,11 @@ function finishExecution(status: 'finished' | 'stopped' | 'error') {
     if (text) text.textContent = t('program_error');
   }
 
-  // Restore buttons
   const stopBtn = document.getElementById('stopBtn');
   if (stopBtn) stopBtn.style.display = 'none';
 
   updateUI();
 
-  // Auto-hide bar after a few seconds
   _execAutoHideTimeout = setTimeout(() => {
     if (bar && !_isRunning) {
       bar.classList.add('hidden');
@@ -421,30 +435,60 @@ function finishExecution(status: 'finished' | 'stopped' | 'error') {
   }, 4000);
 }
 
-// Stop button handlers (both header button and bar button)
 document.getElementById('stopBtn')?.addEventListener('click', () => abortExecution());
 document.getElementById('execStopBtn')?.addEventListener('click', () => abortExecution());
 
-// Lidar panel toggle
-const lidarToggleBtn = document.getElementById('lidarToggleBtn');
-const lidarPanel = document.getElementById('lidarPanel');
+// ── Sidebar Management ──
+const sidebarRight = document.getElementById('sidebarRight');
+const trayButtons = {
+  sim: document.getElementById('simToggleBtn') as HTMLButtonElement,
+  lidar: document.getElementById('lidarToggleBtn') as HTMLButtonElement
+};
+const panels = {
+  sim: document.getElementById('simulationPanel'),
+  lidar: document.getElementById('lidarPanel')
+};
 
-lidarToggleBtn?.addEventListener('click', () => {
-  if (lidarPanel) {
-    const isHidden = lidarPanel.classList.toggle('hidden');
-    lidarToggleBtn.classList.toggle('active', !isHidden);
+let activePanel: 'sim' | 'lidar' | null = null;
+
+function togglePanel(panel: 'sim' | 'lidar') {
+  if (activePanel === panel) {
+    // Collapse
+    activePanel = null;
+    sidebarRight?.classList.add('collapsed');
+  } else {
+    // Expand or Switch
+    activePanel = panel;
+    sidebarRight?.classList.remove('collapsed');
     
-    // Initialize LidarView on first show
-    if (!isHidden && !lidarView) {
+    // Lazy init views
+    if (panel === 'sim' && !simulationView) {
+      simulationView = new SimulationView('simulationCanvas');
+    }
+    if (panel === 'lidar' && !lidarView) {
       lidarView = new LidarView('lidarCanvas');
     }
-    
-    // Resize Blockly workspace after panel toggle transition
-    setTimeout(() => {
-      Blockly.svgResize(workspace);
-      if (lidarView) {
-        lidarView.update(lidarStore.getAllDistances());
-      }
-    }, 350);
   }
+
+  // Update UI
+  Object.entries(trayButtons).forEach(([key, btn]) => {
+    btn?.classList.toggle('active', activePanel === key);
+  });
+  Object.entries(panels).forEach(([key, p]) => {
+    p?.classList.toggle('hidden', activePanel !== key);
+  });
+
+  // Resize Blockly
+  setTimeout(() => {
+    Blockly.svgResize(workspace);
+    if (simulationView) (simulationView as any).resize();
+    if (lidarView) (lidarView as any).resize();
+  }, 300);
+}
+
+trayButtons.sim?.addEventListener('click', () => togglePanel('sim'));
+trayButtons.lidar?.addEventListener('click', () => togglePanel('lidar'));
+
+document.getElementById('resetSimBtn')?.addEventListener('click', () => {
+  simulationView?.reset();
 });

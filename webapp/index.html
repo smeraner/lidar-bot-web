@@ -33,8 +33,8 @@
             </div>
           </div>
           <button id="pairBtn" class="premium-btn" data-i18n="pair" style="display: none;">Pair Robot</button>
-          <button id="lidarToggleBtn">📡 Lidar</button>
-          <button id="runBtn" class="premium-btn primary" data-i18n="run" disabled>Run Program</button>
+          <button id="runSimBtn" class="premium-btn" data-i18n="run_sim">Run Simulation</button>
+          <button id="runLiveBtn" class="premium-btn primary" data-i18n="run_live" disabled>Run Live</button>
           <button id="stopBtn" class="premium-btn danger" style="display: none;" data-i18n="stop_program">Stop</button>
         </div>
       </header>
@@ -51,14 +51,32 @@
       </div>
       <main>
         <div id="blocklyDiv"></div>
-        <div id="lidarPanel" class="hidden">
-          <div class="lidar-header">
-            <h3>Lidar View</h3>
+        
+        <aside id="sidebarRight" class="collapsed">
+          <div class="sidebar-tray">
+            <button id="simToggleBtn" class="tray-btn" title="Simulation">🤖</button>
+            <button id="lidarToggleBtn" class="tray-btn" title="Lidar">📡</button>
           </div>
-          <div class="lidar-canvas-wrap">
-            <canvas id="lidarCanvas"></canvas>
+          <div class="sidebar-content">
+            <div id="simulationPanel" class="panel hidden">
+              <div class="panel-header">
+                <h3 data-i18n="simulation">Simulation</h3>
+                <button id="resetSimBtn" class="text-btn" data-i18n="reset">Reset</button>
+              </div>
+              <div class="canvas-wrap">
+                <canvas id="simulationCanvas"></canvas>
+              </div>
+            </div>
+            <div id="lidarPanel" class="panel hidden">
+              <div class="panel-header">
+                <h3 data-i18n="lidar">Lidar</h3>
+              </div>
+              <div class="canvas-wrap">
+                <canvas id="lidarCanvas"></canvas>
+              </div>
+            </div>
           </div>
-        </div>
+        </aside>
       </main>
     </div>
     <script type="module" src="/src/main.ts"></script>

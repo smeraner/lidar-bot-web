@@ -356,71 +356,130 @@ main {
   fill-opacity: 0.95 !important;
 }
 
-/* Lidar Panel */
-#lidarPanel {
-  width: 340px;
-  min-width: 280px;
+/* Sidebar Right */
+#sidebarRight {
+  display: flex;
   height: calc(100vh - var(--header-height) - 40px);
-  border-radius: 12px;
-  border: 1px solid var(--border);
   background: #0c1222;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 400px; /* Expanded width */
+}
+
+#sidebarRight.collapsed {
+  width: 48px;
+}
+
+.sidebar-tray {
+  width: 48px;
+  background: #090e1a;
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease,
-    padding 0.3s ease;
+  align-items: center;
+  padding: 12px 0;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
-#lidarPanel.hidden {
-  width: 0;
+.tray-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.tray-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border);
+}
+
+.tray-btn.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  border: none;
-  opacity: 0;
-  padding: 0;
   overflow: hidden;
+  position: relative;
 }
 
-.lidar-header {
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.panel.hidden {
   display: none;
 }
 
-.lidar-canvas-wrap {
-  flex: 1;
+.panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.canvas-wrap {
+  flex: 1;
   min-height: 0;
-  padding: 0;
+  position: relative;
 }
 
-#lidarCanvas {
+#simulationCanvas, #lidarCanvas {
   display: block;
+  width: 100%;
+  height: 100%;
 }
 
-#lidarToggleBtn {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
+.text-btn {
   background: transparent;
-  color: white;
-  font-size: 13px;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
 }
 
-#lidarToggleBtn:hover {
-  border-color: var(--accent);
-  background: rgba(56, 189, 248, 0.05);
-}
-
-#lidarToggleBtn.active {
+.text-btn:hover {
   background: rgba(56, 189, 248, 0.1);
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 /* Danger / Stop Button */
