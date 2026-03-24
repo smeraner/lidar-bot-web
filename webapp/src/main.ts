@@ -499,9 +499,37 @@ document.getElementById('resetSimBtn')?.addEventListener('click', () => {
   simulationView?.reset();
 });
 
+document.getElementById('addObstacleBtn')?.addEventListener('click', () => {
+  simulationView?.addObstacle();
+});
+
 // Auto-expand sidebar on large screens
 window.addEventListener('load', () => {
   if (window.innerWidth >= 1200) {
     togglePanel('sim');
   }
 });
+
+// Virtual Lidar Loop
+function virtualLidarLoop() {
+  if (simulationView && !activeBridge.isConnected) {
+    const distances = simulationView.getVirtualLidarData();
+    // Update lidarStore with simulated data
+    // We convert it to the expected points format for consistency
+    const points = distances.map((d, i) => ({ angle: i, distance: d }));
+    lidarStore.update(points);
+    
+    if (lidarView) {
+      lidarView.update(distances);
+    }
+    if (simulationView) {
+      simulationView.setLidarData(distances);
+    }
+    if (worker) {
+      worker.postMessage({ type: 'lidar_update', distances });
+    }
+    updateUI();
+  }
+  requestAnimationFrame(virtualLidarLoop);
+}
+virtualLidarLoop();

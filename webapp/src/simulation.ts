@@ -17,6 +17,10 @@ export class SimulationView {
     private ledColor = '#1e293b'; 
     private ledShowInterval: any = null;
 
+    // Obstacles
+    private obstacles: { x: number, y: number, radius: number }[] = [];
+    private draggingObstacleIndex: number | null = null;
+
     // Kinematics (estimation for simulation)
     // Adjusted: Speed 1 (kinematic) ≈ 150mm/s, 45deg/s
     private readonly TRANS_SCALE = 150; 
@@ -51,12 +55,48 @@ export class SimulationView {
         });
 
         this.canvas.addEventListener('mousedown', (e) => {
-            this.isDragging = true;
-            this.lastMouseX = e.clientX;
-            this.lastMouseY = e.clientY;
+            const rect = this.canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const mx = (e.clientX - rect.left);
+            const my = (e.clientY - rect.top);
+            
+            // Convert click to simulation coordinates
+            const w = this.canvas.width / dpr;
+            const h = this.canvas.height / dpr;
+            const simX = ((mx - w/2) / this.zoom - this.panX) * 10;
+            const simY = -((my - h/2) / this.zoom - this.panY) * 10;
+
+            // Check if clicked on an obstacle
+            const idx = this.obstacles.findIndex(obs => {
+                const dist = Math.sqrt((simX - obs.x)**2 + (simY - obs.y)**2);
+                return dist < obs.radius + 50;
+            });
+
+            if (idx !== -1) {
+                this.draggingObstacleIndex = idx;
+                this.isDragging = false; // Disable panning if dragging obstacle
+            } else {
+                this.isDragging = true;
+                this.lastMouseX = e.clientX;
+                this.lastMouseY = e.clientY;
+            }
         });
 
         window.addEventListener('mousemove', (e) => {
+            if (this.draggingObstacleIndex !== null) {
+                const rect = this.canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                const mx = (e.clientX - rect.left);
+                const my = (e.clientY - rect.top);
+                const w = this.canvas.width / dpr;
+                const h = this.canvas.height / dpr;
+                
+                this.obstacles[this.draggingObstacleIndex].x = ((mx - w/2) / this.zoom - this.panX) * 10;
+                this.obstacles[this.draggingObstacleIndex].y = -((my - h/2) / this.zoom - this.panY) * 10;
+                this.scheduleDraw();
+                return;
+            }
+
             if (!this.isDragging) return;
             const dx = (e.clientX - this.lastMouseX) / this.zoom;
             const dy = (e.clientY - this.lastMouseY) / this.zoom;
@@ -69,6 +109,7 @@ export class SimulationView {
 
         window.addEventListener('mouseup', () => {
             this.isDragging = false;
+            this.draggingObstacleIndex = null;
         });
     }
 
@@ -124,6 +165,56 @@ export class SimulationView {
         }
     }
 
+    addObstacle() {
+        // Correct spawn point: The simulation coordinates that map to screen center
+        // scrX = w/2 + (panX + simX/10) * zoom => simX = -panX * 10
+        // scrY = h/2 + (panY - simY/10) * zoom => simY = panY * 10
+        this.obstacles.push({
+            x: -this.panX * 10 + (Math.random() - 0.5) * 500,
+            y: this.panY * 10 + (Math.random() - 0.5) * 500,
+            radius: 150 + Math.random() * 100
+        });
+        this.scheduleDraw();
+    }
+
+    getVirtualLidarData(): number[] {
+        const distances = new Array(360).fill(0);
+        
+        for (let i = 0; i < 360; i++) {
+            // FIXED: Angle 0 is Front. In our coordinate system (North = 0),
+            // Front is current heading.
+            // Canvas/Unit circle 0 is East. North is 90.
+            // So simulation angle = 90 - (heading + lidar_angle)
+            const angleDeg = (90 - (this.heading + i));
+            const angleRad = (angleDeg * Math.PI) / 180;
+            const dirX = Math.cos(angleRad);
+            const dirY = Math.sin(angleRad);
+
+            let minDoc = 4000; // Max range 4m
+
+            for (const obs of this.obstacles) {
+                // Ray-Circle Intersection
+                // Bot position is (posX, posY)
+                const ocX = this.posX - obs.x;
+                const ocY = this.posY - obs.y;
+                
+                const a = dirX * dirX + dirY * dirY;
+                const b = 2 * (ocX * dirX + ocY * dirY);
+                const c = ocX * ocX + ocY * ocY - obs.radius * obs.radius;
+                
+                const discriminant = b * b - 4 * a * c;
+                if (discriminant > 0) {
+                    const t = (-b - Math.sqrt(discriminant)) / (2 * a);
+                    if (t > 0 && t < minDoc) {
+                        minDoc = t;
+                    }
+                }
+            }
+            distances[i] = minDoc < 4000 ? Math.round(minDoc) : 0;
+        }
+        return distances;
+    }
+
     async updateCommand(x: number, y: number, z: number, duration: number) {
         console.log(`Sim: Command received x=${x}, y=${y}, z=${z}, dur=${duration}`);
         this.commandQueue.push({ x, y, z, duration });
@@ -152,9 +243,13 @@ export class SimulationView {
 
         for (let i = 0; i < steps; i++) {
             this.heading += dz;
-            const rad = (this.heading - 90) * (Math.PI / 180);
-            const moveX = dy * Math.cos(rad) + dx * Math.cos(rad + Math.PI/2);
-            const moveY = dy * Math.sin(rad) + dx * Math.sin(rad + Math.PI/2);
+            // FIXED: Heading 0 is North (Up). Unit circle 0 is East (Right).
+            // Unit circle angle = 90 - heading
+            const rad = (90 - this.heading) * (Math.PI / 180);
+            
+            // dy is forward/back, dx is left/right
+            const moveX = dy * Math.cos(rad) + dx * Math.cos(rad - Math.PI/2);
+            const moveY = dy * Math.sin(rad) + dx * Math.sin(rad - Math.PI/2);
             
             this.posX += moveX;
             this.posY += moveY;
@@ -225,6 +320,17 @@ export class SimulationView {
             ctx.stroke();
         }
 
+        // Draw Obstacles
+        ctx.fillStyle = 'rgba(100, 116, 139, 0.8)';
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2 / this.zoom;
+        for (const obs of this.obstacles) {
+            ctx.beginPath();
+            ctx.arc(obs.x / 10, -obs.y / 10, obs.radius / 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
         // Draw Bot
         ctx.save();
         ctx.translate(this.posX / 10, -this.posY / 10);
@@ -234,9 +340,11 @@ export class SimulationView {
         for (let i = 0; i < 360; i++) {
             const dist = this.lidarDistances[i];
             if (dist > 0 && dist < 4000) { // Max 4m for visualization
-                const angleRad = ((i + this.heading - 90) * Math.PI) / 180;
+                // Match the detection logic: North is 90 on unit circle
+                const angleDeg = (90 - (this.heading + i));
+                const angleRad = (angleDeg * Math.PI) / 180;
                 const lx = (dist / 10) * Math.cos(angleRad);
-                const ly = (dist / 10) * Math.sin(angleRad);
+                const ly = -(dist / 10) * Math.sin(angleRad); // Negate Y for Canvas
                 ctx.beginPath();
                 ctx.arc(lx, ly, 1.5 / this.zoom, 0, Math.PI * 2);
                 ctx.fill();
