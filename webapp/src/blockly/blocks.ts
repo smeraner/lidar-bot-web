@@ -26,7 +26,12 @@ export function defineBlocks() {
 
     Blockly.Blocks['lidarbot_led_show'] = {
         init: function () {
-            this.appendDummyInput().appendField(t('led_show'));
+            this.appendDummyInput()
+                .appendField(t('led_show'))
+                .appendField(new FieldColour('#ffffff'), 'COLOR')
+                .appendField(t('duration'))
+                .appendField(new Blockly.FieldNumber(1000, 0, 10000), "DURATION")
+                .appendField(t('ms'));
             this.setPreviousStatement(true, null);
             this.setNextStatement(true, null);
             this.setColour(290);

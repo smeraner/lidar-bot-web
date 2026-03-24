@@ -332,8 +332,14 @@ async function runProgram(isLive: boolean) {
           }
       } else if (msg.type === 'sendLedShow') {
           if (_isLiveRun) await activeBridge.sendLedShow();
+          if (simulationView) {
+            simulationView.ledShow();
+          }
       } else if (msg.type === 'sendLedColor') {
           if (_isLiveRun) await (activeBridge.sendLedColor as any)(...msg.args);
+          if (simulationView) {
+            simulationView.setLedColor(...(msg.args as [number, number, number]));
+          }
       } else if (msg.type === 'highlightBlock') {
           workspace.highlightBlock(msg.id);
       } else if (msg.type === 'finished') {

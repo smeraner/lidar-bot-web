@@ -24,8 +24,27 @@ export function defineGenerators() {
         return `__checkAbort();\nawait serialBridge.sendCommand(0, 0, 0);\n`;
     };
 
-    javascriptGenerator.forBlock['lidarbot_led_show'] = function () {
-        return `__checkAbort();\nawait serialBridge.sendLedShow();\n`;
+    javascriptGenerator.forBlock['lidarbot_led_show'] = function (block: any) {
+        const hex: string = block.getFieldValue('COLOR');
+        const duration = block.getFieldValue('DURATION');
+        const r = parseInt(hex.substring(1, 3), 16);
+        const g = parseInt(hex.substring(3, 5), 16);
+        const b = parseInt(hex.substring(5, 7), 16);
+
+        // Native ledshow is fixed, so for custom color/duration we simulate it with colors
+        return `
+{
+  const start = Date.now();
+  while (Date.now() - start < ${duration}) {
+    __checkAbort();
+    await serialBridge.sendLedColor(${r}, ${g}, ${b});
+    await __sleep(100);
+    __checkAbort();
+    await serialBridge.sendLedColor(0, 0, 0);
+    await __sleep(100);
+  }
+}
+`;
     };
 
     javascriptGenerator.forBlock['lidarbot_set_color'] = function (block: any) {

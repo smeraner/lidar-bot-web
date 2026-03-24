@@ -14,10 +14,13 @@ export class SimulationView {
     private heading = 0; // degrees, 0 is North/Up
     private path: { x: number, y: number }[] = [];
     private lidarDistances: number[] = new Array(360).fill(0);
+    private ledColor = '#1e293b'; 
+    private ledShowInterval: any = null;
 
     // Kinematics (estimation for simulation)
-    private readonly TRANS_SCALE = 15; 
-    private readonly ROT_SCALE = 10;
+    // Adjusted: Speed 1 (kinematic) ≈ 150mm/s, 45deg/s
+    private readonly TRANS_SCALE = 150; 
+    private readonly ROT_SCALE = 45;
 
     // View state
     private zoom = 1;
@@ -73,6 +76,7 @@ export class SimulationView {
     private isProcessingQueue = false;
 
     reset() {
+        this.stopLedShow();
         this.posX = 0;
         this.posY = 0;
         this.heading = 0;
@@ -81,6 +85,7 @@ export class SimulationView {
         this.panY = 0;
         this.zoom = 1;
         this.lidarDistances.fill(0);
+        this.ledColor = '#1e293b';
         this.commandQueue = [];
         this.isProcessingQueue = false;
         this.scheduleDraw();
@@ -89,6 +94,34 @@ export class SimulationView {
     setLidarData(distances: number[]) {
         this.lidarDistances = [...distances];
         this.scheduleDraw();
+    }
+
+    setLedColor(r: number, g: number, b: number) {
+        this.stopLedShow();
+        this.ledColor = `rgb(${r},${g},${b})`;
+        this.scheduleDraw();
+    }
+
+    ledShow() {
+        this.stopLedShow();
+        let count = 0;
+        this.ledShowInterval = setInterval(() => {
+            count++;
+            if (count > 10) { // 1 second (10 * 100ms)
+                this.stopLedShow();
+                this.ledColor = '#1e293b'; // Off
+            } else {
+                this.ledColor = count % 2 === 0 ? 'rgb(255,255,255)' : '#1e293b';
+            }
+            this.scheduleDraw();
+        }, 100);
+    }
+
+    private stopLedShow() {
+        if (this.ledShowInterval) {
+            clearInterval(this.ledShowInterval);
+            this.ledShowInterval = null;
+        }
     }
 
     async updateCommand(x: number, y: number, z: number, duration: number) {
@@ -233,6 +266,15 @@ export class SimulationView {
         ctx.fillRect(12, -15, 6, 12);
         ctx.fillRect(-18, 5, 6, 12);
         ctx.fillRect(12, 5, 6, 12);
+
+        // LEDs (drawn as distinct circles)
+        ctx.fillStyle = this.ledColor;
+        const ledPositions = [[-12, -12], [12, -12], [-12, 12], [12, 12]];
+        for (const [lx, ly] of ledPositions) {
+            ctx.beginPath();
+            ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         ctx.restore();
         ctx.restore();
