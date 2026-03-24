@@ -14,6 +14,9 @@ export class SimulationView {
     private heading = 0; // degrees, 0 is North/Up
     private path: { x: number, y: number }[] = [];
     private lidarDistances: number[] = new Array(360).fill(0);
+    private scanPosX = 0;
+    private scanPosY = 0;
+    private scanHeading = 0;
     private ledColor = '#1e293b'; 
     private ledShowInterval: any = null;
 
@@ -121,6 +124,9 @@ export class SimulationView {
         this.posX = 0;
         this.posY = 0;
         this.heading = 0;
+        this.scanPosX = 0;
+        this.scanPosY = 0;
+        this.scanHeading = 0;
         this.path = [{ x: 0, y: 0 }];
         this.panX = 0;
         this.panY = 0;
@@ -179,6 +185,10 @@ export class SimulationView {
 
     getVirtualLidarData(): number[] {
         const distances = new Array(360).fill(0);
+        // Capture state for visual alignment
+        this.scanPosX = this.posX;
+        this.scanPosY = this.posY;
+        this.scanHeading = this.heading;
         
         for (let i = 0; i < 360; i++) {
             // FIXED: Angle 0 is Front. In our coordinate system (North = 0),
@@ -331,26 +341,28 @@ export class SimulationView {
             ctx.stroke();
         }
 
-        // Draw Bot
+        // Draw Lidar Points (World Space relative to Scan Position)
         ctx.save();
-        ctx.translate(this.posX / 10, -this.posY / 10);
-
-        // Draw Lidar Points
+        ctx.translate(this.scanPosX / 10, -this.scanPosY / 10);
         ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
         for (let i = 0; i < 360; i++) {
             const dist = this.lidarDistances[i];
-            if (dist > 0 && dist < 4000) { // Max 4m for visualization
-                // Match the detection logic: North is 90 on unit circle
-                const angleDeg = (90 - (this.heading + i));
-                const angleRad = (angleDeg * Math.PI) / 180;
-                const lx = (dist / 10) * Math.cos(angleRad);
-                const ly = -(dist / 10) * Math.sin(angleRad); // Negate Y for Canvas
+            if (dist > 0 && dist < 4000) {
+                // Use the heading that was active when this scan was taken
+                const worldAngle = this.scanHeading + i;
+                const unitAngle = (90 - worldAngle) * (Math.PI / 180);
+                const lx = (dist / 10) * Math.cos(unitAngle);
+                const ly = -(dist / 10) * Math.sin(unitAngle);
                 ctx.beginPath();
                 ctx.arc(lx, ly, 1.5 / this.zoom, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
+        ctx.restore();
 
+        // Draw Bot
+        ctx.save();
+        ctx.translate(this.posX / 10, -this.posY / 10);
         ctx.rotate((this.heading * Math.PI) / 180);
 
         // Bot Body

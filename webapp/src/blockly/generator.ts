@@ -22,6 +22,20 @@ export function defineGenerators() {
         return `__checkAbort();\n${moveCode}\nawait __sleep(${duration});\n`;
     };
 
+    javascriptGenerator.forBlock['lidarbot_rotate'] = function (block: any) {
+        const direction = block.getFieldValue('DIRECTION');
+        const speed = javascriptGenerator.valueToCode(block, 'SPEED', Order.ATOMIC) || '50';
+        const duration = javascriptGenerator.valueToCode(block, 'DURATION', Order.ATOMIC) || '1000';
+
+        const sCode = `Math.round(parseInt(${speed}) * 7 / 100)`;
+        
+        let moveCode = '';
+        if (direction === 'LEFT') moveCode = `await serialBridge.sendCommand(0, 0, -(${sCode}), ${duration});`;
+        if (direction === 'RIGHT') moveCode = `await serialBridge.sendCommand(0, 0, ${sCode}, ${duration});`;
+
+        return `__checkAbort();\n${moveCode}\nawait __sleep(${duration});\n`;
+    };
+
     javascriptGenerator.forBlock['lidarbot_stop'] = function () {
         return `__checkAbort();\nawait serialBridge.sendCommand(0, 0, 0);\n`;
     };

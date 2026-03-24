@@ -73,6 +73,18 @@ const toolbox = `
           </shadow>
         </value>
       </block>
+      <block type="lidarbot_rotate">
+        <value name="SPEED">
+          <shadow type="math_number">
+            <field name="NUM">50</field>
+          </shadow>
+        </value>
+        <value name="DURATION">
+          <shadow type="math_number">
+            <field name="NUM">1000</field>
+          </shadow>
+        </value>
+      </block>
       <block type="lidarbot_stop"></block>
     </category>
     <category name="${t('lights')}" colour="290">

@@ -28,6 +28,29 @@ export function defineBlocks() {
         }
     };
 
+    Blockly.Blocks['lidarbot_rotate'] = {
+        init: function () {
+            this.appendDummyInput()
+                .appendField(t('rotate'))
+                .appendField(new Blockly.FieldDropdown([
+                    [t('rotate_left'), "LEFT"],
+                    [t('rotate_right'), "RIGHT"]
+                ]), "DIRECTION");
+            this.appendValueInput("SPEED")
+                .setCheck("Number")
+                .appendField(t('speed'));
+            this.appendValueInput("DURATION")
+                .setCheck("Number")
+                .appendField(t('duration'));
+            this.appendDummyInput()
+                .appendField(t('ms'));
+            this.setInputsInline(true);
+            this.setPreviousStatement(true, null);
+            this.setNextStatement(true, null);
+            this.setColour(230);
+        }
+    };
+
     Blockly.Blocks['lidarbot_led_show'] = {
         init: function () {
             this.appendDummyInput()
