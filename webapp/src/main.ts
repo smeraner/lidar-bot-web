@@ -30,7 +30,7 @@ let worker: Worker | null = null;
 let lidarView: LidarView | null = null;
 let simulationView: SimulationView | null = null;
 
-const handleLidarData = (points: { angle: number, distance: number }[]) => {
+const handleLidarData = (points: { angle: number; distance: number }[]) => {
   lidarStore.update(points);
   if (lidarView) {
     lidarView.update(lidarStore.getAllDistances());
@@ -147,7 +147,7 @@ const toolbox = `
 `;
 
 const workspace = Blockly.inject('blocklyDiv', {
-  toolbox: toolbox
+  toolbox: toolbox,
 });
 
 // Load saved workspace if any
@@ -156,16 +156,18 @@ if (savedState) {
   try {
     Blockly.serialization.workspaces.load(JSON.parse(savedState), workspace);
   } catch (e) {
-    console.error("Error loading workspace state", e);
+    console.error('Error loading workspace state', e);
   }
 }
 
 // Auto-save workspace
 workspace.addChangeListener((event) => {
-  if (event.type === Blockly.Events.BLOCK_CHANGE || 
-      event.type === Blockly.Events.BLOCK_CREATE || 
-      event.type === Blockly.Events.BLOCK_DELETE || 
-      event.type === Blockly.Events.BLOCK_MOVE) {
+  if (
+    event.type === Blockly.Events.BLOCK_CHANGE ||
+    event.type === Blockly.Events.BLOCK_CREATE ||
+    event.type === Blockly.Events.BLOCK_DELETE ||
+    event.type === Blockly.Events.BLOCK_MOVE
+  ) {
     const state = Blockly.serialization.workspaces.save(workspace);
     localStorage.setItem('blocklyWorkspace', JSON.stringify(state));
   }
@@ -175,7 +177,7 @@ function updateUI() {
   const lang = getLanguage();
   // ── Language / i18n ──
   if ((window as any)._lastUILang !== lang) {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.getAttribute('data-i18n') as any;
       if (key) {
         const translated = t(key);
@@ -196,14 +198,14 @@ function updateUI() {
 
   if (mainConnectBtn) {
     const isConnected = serialBridge.isConnected || bluetoothBridge.isConnected;
-    const newText = (isConnected ? t('disconnect') : t('connect')) + " ▾";
+    const newText = (isConnected ? t('disconnect') : t('connect')) + ' ▾';
     if (mainConnectBtn.textContent !== newText) mainConnectBtn.textContent = newText;
     mainConnectBtn.classList.toggle('connected', isConnected);
   }
 
   if (usbDropdownBtn) {
     const isConnected = serialBridge.isConnected;
-    const newText = isConnected ? "🔌 " + t('disconnect') : "🔌 " + t('bridge_usb');
+    const newText = isConnected ? '🔌 ' + t('disconnect') : '🔌 ' + t('bridge_usb');
     if (usbDropdownBtn.textContent !== newText) usbDropdownBtn.textContent = newText;
     usbDropdownBtn.classList.toggle('connected', isConnected);
     usbDropdownBtn.classList.toggle('active', activeBridge === serialBridge);
@@ -211,7 +213,7 @@ function updateUI() {
 
   if (bleDropdownBtn) {
     const isConnected = bluetoothBridge.isConnected;
-    const newText = isConnected ? "🔵 " + t('disconnect_bt') : "🔵 " + t('bridge_bt');
+    const newText = isConnected ? '🔵 ' + t('disconnect_bt') : '🔵 ' + t('bridge_bt');
     if (bleDropdownBtn.textContent !== newText) bleDropdownBtn.textContent = newText;
     bleDropdownBtn.classList.toggle('connected', isConnected);
     bleDropdownBtn.classList.toggle('active', activeBridge === bluetoothBridge);
@@ -229,18 +231,25 @@ function updateUI() {
     const status = activeBridge.robotStatus;
     robotStatus.classList.remove('connected', 'searching', 'disconnected');
     robotStatus.classList.add(status);
-    
+
     if (robotStatusText) {
-      const statusLabel = status === 'connected' ? t('robot_connected') : 
-                          (status === 'searching' ? t('robot_searching') : t('robot_disconnected'));
+      const statusLabel =
+        status === 'connected'
+          ? t('robot_connected')
+          : status === 'searching'
+            ? t('robot_searching')
+            : t('robot_disconnected');
       if (robotStatusText.textContent !== statusLabel) robotStatusText.textContent = statusLabel;
     }
   }
-  
+
   // Update visibility of Pair button
   const pairBtn = document.getElementById('pairBtn');
   if (pairBtn) {
-    const newDisplay = (activeBridge.isConnected && activeBridge.robotStatus !== 'connected') ? 'inline-block' : 'none';
+    const newDisplay =
+      activeBridge.isConnected && activeBridge.robotStatus !== 'connected'
+        ? 'inline-block'
+        : 'none';
     if (pairBtn.style.display !== newDisplay) pairBtn.style.display = newDisplay;
   }
 
@@ -258,7 +267,7 @@ if (languageSelect) {
   languageSelect.value = getLanguage();
   languageSelect.addEventListener('change', (e) => {
     setLanguage((e.target as HTMLSelectElement).value as Language);
-    
+
     const state = Blockly.serialization.workspaces.save(workspace);
     defineBlocks();
     workspace.clear();
@@ -272,10 +281,10 @@ updateUI();
 // ── Consolidated Connect Logic ──
 const mainConnectBtn = document.getElementById('mainConnectBtn') as HTMLButtonElement;
 mainConnectBtn?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const dropdown = mainConnectBtn.parentElement;
-    dropdown?.classList.toggle('active');
-    updateUI();
+  e.stopPropagation();
+  const dropdown = mainConnectBtn.parentElement;
+  dropdown?.classList.toggle('active');
+  updateUI();
 });
 
 window.addEventListener('click', () => {
@@ -284,52 +293,56 @@ window.addEventListener('click', () => {
 
 const usbDropdownBtn = document.getElementById('connectBtn') as HTMLButtonElement;
 usbDropdownBtn?.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    if (!navigator.serial) {
-        alert("Web Serial API is not supported in this browser or requires a secure context (HTTPS / localhost).");
-        return;
+  e.stopPropagation();
+  if (!navigator.serial) {
+    alert(
+      'Web Serial API is not supported in this browser or requires a secure context (HTTPS / localhost).',
+    );
+    return;
+  }
+
+  if (serialBridge.isConnected) {
+    await serialBridge.disconnect();
+  } else {
+    if (bluetoothBridge.isConnected) {
+      await bluetoothBridge.disconnect();
     }
-    
+    await serialBridge.connect();
     if (serialBridge.isConnected) {
-        await serialBridge.disconnect();
-    } else {
-        if (bluetoothBridge.isConnected) {
-            await bluetoothBridge.disconnect();
-        }
-        await serialBridge.connect();
-        if (serialBridge.isConnected) {
-          setActiveBridge(serialBridge);
-        }
+      setActiveBridge(serialBridge);
     }
-    mainConnectBtn?.parentElement?.classList.remove('active');
-    updateUI();
+  }
+  mainConnectBtn?.parentElement?.classList.remove('active');
+  updateUI();
 });
 
 const bleDropdownBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
 bleDropdownBtn?.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    if (!navigator.bluetooth) {
-        alert("Web Bluetooth API is not supported in this browser or requires a secure context (HTTPS / localhost).");
-        return;
-    }
+  e.stopPropagation();
+  if (!navigator.bluetooth) {
+    alert(
+      'Web Bluetooth API is not supported in this browser or requires a secure context (HTTPS / localhost).',
+    );
+    return;
+  }
 
-    if (bluetoothBridge.isConnected) {
-        await bluetoothBridge.disconnect();
-    } else {
-        if (serialBridge.isConnected) {
-            await serialBridge.disconnect();
-        }
-        await bluetoothBridge.connect();
-        if (bluetoothBridge.isConnected) {
-          setActiveBridge(bluetoothBridge);
-        }
+  if (bluetoothBridge.isConnected) {
+    await bluetoothBridge.disconnect();
+  } else {
+    if (serialBridge.isConnected) {
+      await serialBridge.disconnect();
     }
-    mainConnectBtn?.parentElement?.classList.remove('active');
-    updateUI();
+    await bluetoothBridge.connect();
+    if (bluetoothBridge.isConnected) {
+      setActiveBridge(bluetoothBridge);
+    }
+  }
+  mainConnectBtn?.parentElement?.classList.remove('active');
+  updateUI();
 });
 
 document.getElementById('pairBtn')?.addEventListener('click', async () => {
-    await activeBridge.pair();
+  await activeBridge.pair();
 });
 
 let _isLiveRun = false;
@@ -354,42 +367,57 @@ async function runProgram(isLive: boolean) {
   worker = new ExecutorWorker();
 
   worker.onmessage = async (e) => {
-      const msg = e.data;
-      if (msg.type === 'sendCommand') {
-          console.log("Main: Received sendCommand from worker", msg.args);
-          // Forward to real robot only if live
-          if (_isLiveRun) {
-            await (activeBridge.sendCommand as any)(...msg.args);
-          }
-          // Always forward to simulation
-          if (simulationView) {
-            simulationView.updateCommand(...(msg.args as [number, number, number, number]));
-          } else {
-            console.warn("Main: simulationView is not initialized");
-          }
-      } else if (msg.type === 'sendLedShow') {
-          if (_isLiveRun) await activeBridge.sendLedShow();
-          if (simulationView) {
-            simulationView.ledShow();
-          }
-      } else if (msg.type === 'sendLedColor') {
-          if (_isLiveRun) await (activeBridge.sendLedColor as any)(...msg.args);
-          if (simulationView) {
-            simulationView.setLedColor(...(msg.args as [number, number, number]));
-          }
-      } else if (msg.type === 'highlightBlock') {
-          workspace.highlightBlock(msg.id);
-      } else if (msg.type === 'finished') {
-          if (_isLiveRun) try { await activeBridge.sendCommand(0, 0, 0); } catch {}
-          finishExecution('finished');
-      } else if (msg.type === 'stopped') {
-          if (_isLiveRun) try { await activeBridge.sendCommand(0, 0, 0); } catch {}
-          finishExecution('stopped');
-      } else if (msg.type === 'error') {
-          console.error("Worker error:", msg.error);
-          if (_isLiveRun) try { await activeBridge.sendCommand(0, 0, 0); } catch {}
-          finishExecution('error');
+    const msg = e.data;
+    if (msg.type === 'sendCommand') {
+      console.log('Main: Received sendCommand from worker', msg.args);
+      // Forward to real robot only if live
+      if (_isLiveRun) {
+        await (activeBridge.sendCommand as any)(...msg.args);
       }
+      // Always forward to simulation
+      if (simulationView) {
+        simulationView.updateCommand(...(msg.args as [number, number, number, number]));
+      } else {
+        console.warn('Main: simulationView is not initialized');
+      }
+    } else if (msg.type === 'sendLedShow') {
+      if (_isLiveRun) await activeBridge.sendLedShow();
+      if (simulationView) {
+        simulationView.ledShow();
+      }
+    } else if (msg.type === 'sendLedColor') {
+      if (_isLiveRun) await (activeBridge.sendLedColor as any)(...msg.args);
+      if (simulationView) {
+        simulationView.setLedColor(...(msg.args as [number, number, number]));
+      }
+    } else if (msg.type === 'highlightBlock') {
+      workspace.highlightBlock(msg.id);
+    } else if (msg.type === 'finished') {
+      if (_isLiveRun)
+        try {
+          await activeBridge.sendCommand(0, 0, 0);
+        } catch (e) {
+          console.warn('Stop failed:', e);
+        }
+      finishExecution('finished');
+    } else if (msg.type === 'stopped') {
+      if (_isLiveRun)
+        try {
+          await activeBridge.sendCommand(0, 0, 0);
+        } catch (e) {
+          console.warn('Stop failed:', e);
+        }
+      finishExecution('stopped');
+    } else if (msg.type === 'error') {
+      console.error('Worker error:', msg.error);
+      if (_isLiveRun)
+        try {
+          await activeBridge.sendCommand(0, 0, 0);
+        } catch (e) {
+          console.warn('Stop failed:', e);
+        }
+      finishExecution('error');
+    }
   };
 
   worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
@@ -401,7 +429,7 @@ document.getElementById('runSimBtn')?.addEventListener('click', () => runProgram
 function abortExecution() {
   if (!_isRunning) return;
   if (worker) {
-      worker.postMessage({ type: 'abort' });
+    worker.postMessage({ type: 'abort' });
   }
 }
 
@@ -409,7 +437,10 @@ function startExecution() {
   _isRunning = true;
   _execStartTime = Date.now();
 
-  if (_execAutoHideTimeout) { clearTimeout(_execAutoHideTimeout); _execAutoHideTimeout = null; }
+  if (_execAutoHideTimeout) {
+    clearTimeout(_execAutoHideTimeout);
+    _execAutoHideTimeout = null;
+  }
 
   const bar = document.getElementById('executionBar');
   if (bar) {
@@ -443,7 +474,10 @@ function startExecution() {
 
 function finishExecution(status: 'finished' | 'stopped' | 'error') {
   _isRunning = false;
-  if (_execTimerInterval) { clearInterval(_execTimerInterval); _execTimerInterval = null; }
+  if (_execTimerInterval) {
+    clearInterval(_execTimerInterval);
+    _execTimerInterval = null;
+  }
   workspace.highlightBlock(null);
 
   const bar = document.getElementById('executionBar');
@@ -485,11 +519,11 @@ document.getElementById('execStopBtn')?.addEventListener('click', () => abortExe
 const sidebarRight = document.getElementById('sidebarRight');
 const trayButtons = {
   sim: document.getElementById('simToggleBtn') as HTMLButtonElement,
-  lidar: document.getElementById('lidarToggleBtn') as HTMLButtonElement
+  lidar: document.getElementById('lidarToggleBtn') as HTMLButtonElement,
 };
 const panels = {
   sim: document.getElementById('simulationPanel'),
-  lidar: document.getElementById('lidarPanel')
+  lidar: document.getElementById('lidarPanel'),
 };
 
 let activePanel: 'sim' | 'lidar' | null = null;
@@ -503,7 +537,7 @@ function togglePanel(panel: 'sim' | 'lidar') {
     // Expand or Switch
     activePanel = panel;
     sidebarRight?.classList.remove('collapsed');
-    
+
     // Lazy init views
     if (panel === 'sim' && !simulationView) {
       simulationView = new SimulationView('simulationCanvas');
@@ -550,16 +584,16 @@ let lastSimDistances: number[] = [];
 function virtualLidarLoop() {
   if (simulationView && !activeBridge.isConnected) {
     const distances = simulationView.getVirtualLidarData();
-    
+
     // Only update if distances changed significantly
     const distSum = distances.reduce((a, b) => a + b, 0);
     const lastDistSum = lastSimDistances.reduce((a, b) => a + b, 0);
-    
+
     if (distSum !== lastDistSum) {
       lastSimDistances = [...distances];
       const points = distances.map((d, i) => ({ angle: i, distance: d }));
       lidarStore.update(points);
-      
+
       if (lidarView) {
         lidarView.update(distances);
       }

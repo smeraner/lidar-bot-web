@@ -9,7 +9,11 @@
   --primary-hover: #6366f1;
   --header-height: 80px;
 
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
   color-scheme: dark;
 }
 
@@ -36,7 +40,9 @@ header {
   justify-content: space-between;
   background: var(--card-bg);
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   z-index: 10;
 }
 
@@ -201,12 +207,14 @@ header h1 {
 
 /* Internal container to keep the decoration and overflow: hidden */
 .dropdown-content::after {
-  content: "";
+  content: '';
   display: block;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.3),
+    0 8px 10px -6px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(12px);
   position: absolute;
   top: 8px;
@@ -215,8 +223,6 @@ header h1 {
   bottom: 0;
   z-index: -1;
 }
-
-
 
 .dropdown.active .dropdown-content {
   display: block;
@@ -428,8 +434,14 @@ main {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateX(10px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .panel.hidden {
@@ -462,7 +474,8 @@ main {
   position: relative;
 }
 
-#simulationCanvas, #lidarCanvas {
+#simulationCanvas,
+#lidarCanvas {
   display: block;
   width: 100%;
   height: 100%;
@@ -509,8 +522,13 @@ main {
 }
 
 @keyframes danger-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
-  50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  }
 }
 
 /* Run button disabled state */
@@ -581,8 +599,12 @@ main {
 }
 
 @keyframes spin-icon {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .exec-text {
@@ -592,10 +614,18 @@ main {
   white-space: nowrap;
 }
 
-.execution-bar.status-running .exec-text { color: var(--primary); }
-.execution-bar.status-finished .exec-text { color: #10b981; }
-.execution-bar.status-stopped .exec-text { color: #f59e0b; }
-.execution-bar.status-error .exec-text { color: #ef4444; }
+.execution-bar.status-running .exec-text {
+  color: var(--primary);
+}
+.execution-bar.status-finished .exec-text {
+  color: #10b981;
+}
+.execution-bar.status-stopped .exec-text {
+  color: #f59e0b;
+}
+.execution-bar.status-error .exec-text {
+  color: #ef4444;
+}
 
 .exec-timer {
   font-size: 12px;
@@ -644,9 +674,15 @@ main {
 }
 
 @keyframes progress-indeterminate {
-  0% { transform: translateX(-100%); }
-  50% { transform: translateX(0%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .exec-stop-btn {

@@ -4,11 +4,24 @@
     "description": "LidarBotWeb",
     "main": "index.js",
     "scripts": {
+        "dev": "npm run dev --workspace=webapp",
+        "test": "npm run test:run --workspace=webapp",
+        "lint": "npm run lint --workspace=webapp",
+        "format": "npm run format --workspace=webapp",
         "flash-bridge": "cd firmware-bridge && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe run -t upload",
         "monitor-bridge": "cd firmware-bridge && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe device monitor",
         "flash-bot": "cd firmware-lidarbot && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe run -t upload",
         "monitor-bot": "cd firmware-lidarbot && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe device monitor",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test-firmware": "cd firmware-bridge && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe test && cd ../firmware-lidarbot && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe test",
+        "lint-firmware": "cd firmware-bridge && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe check && cd ../firmware-lidarbot && C:\\Users\\%USERNAME%\\.platformio\\penv\\Scripts\\pio.exe check",
+        "prepare": "husky"
+    },
+    "workspaces": [
+        "webapp"
+    ],
+    "devDependencies": {
+        "husky": "^9.0.0",
+        "lint-staged": "^15.0.0"
     },
     "keywords": [],
     "author": "",

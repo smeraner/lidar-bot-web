@@ -27,8 +27,14 @@ The project is a monorepo consisting of:
 - **Communication**: ESP-NOW protocol (Low-latency/Direct), USB Serial.
 
 ## 🚀 Common Commands
+- **Root Automations**:
+  - `npm run dev`: Starts the Vite webapp dev server.
+  - `npm run test`: Runs the Vitest suite in the webapp.
+  - `npm run lint` / `npm run format`: Runs ESLint and Prettier for the webapp.
+  - `npm run test-firmware`: Runs Native PlatformIO tests for both firmwares.
+  - `npm run lint-firmware`: Runs `cppcheck` and `clang-format` rules for both ESP32 environments.
 - **Web App**: `npm run dev` in `webapp/` (starts the development server).
-- **Firmware**: PlatformIO or Arduino IDE to flash the ESP32.
+- **Firmware**: PlatformIO or Arduino IDE to flash the ESP32, or utilize the `npm run flash-bridge` and `npm run flash-bot` scripts at the root level.
 
 ## 🏃 Common Procedures
 Refer to the following workflows for standard tasks:
