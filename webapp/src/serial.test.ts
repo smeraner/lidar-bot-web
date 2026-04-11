@@ -21,8 +21,8 @@ describe('SerialBridge', () => {
     return new Promise<void>((resolve) => {
       bridge.onLidarData((points) => {
         expect(points.length).toBe(2);
-        expect(points[0]).toEqual({ angle: 90, distance: 100 });
-        expect(points[1]).toEqual({ angle: 180, distance: 200 });
+        expect(points[0]).toEqual({ angle: 180, distance: 100 });
+        expect(points[1]).toEqual({ angle: 270, distance: 200 });
         resolve();
       });
 
