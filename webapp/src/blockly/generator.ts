@@ -49,7 +49,7 @@ export function defineGenerators() {
     return `__checkAbort();\nawait serialBridge.sendCommand(0, 0, 0);\n`;
   };
 
-  javascriptGenerator.forBlock['lidarbot_led_show'] = function (block: any) {
+  javascriptGenerator.forBlock['lidarbot_led_blink'] = function (block: any) {
     const hex: string = block.getFieldValue('COLOR');
     const duration = javascriptGenerator.valueToCode(block, 'DURATION', Order.ATOMIC) || '1000';
     const r = parseInt(hex.substring(1, 3), 16);
@@ -70,6 +70,10 @@ export function defineGenerators() {
   }
 }
 `;
+  };
+
+  javascriptGenerator.forBlock['lidarbot_led_show'] = function () {
+    return `__checkAbort();\nawait serialBridge.sendLedShow();\n`;
   };
 
   javascriptGenerator.forBlock['lidarbot_set_color'] = function (block: any) {

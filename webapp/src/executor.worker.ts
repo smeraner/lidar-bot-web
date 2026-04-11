@@ -30,10 +30,15 @@ self.onmessage = async (e) => {
         return _distances[angle % 360] || 0;
       },
       isObstacle: (startAngle: number, endAngle: number, threshold: number) => {
-        const s = Math.min(startAngle, endAngle);
-        const e = Math.max(startAngle, endAngle);
-        for (let i = s; i <= e; i++) {
-          const d = _distances[i % 360];
+        let start = startAngle % 360;
+        if (start < 0) start += 360;
+        let end = endAngle % 360;
+        if (end < 0) end += 360;
+
+        const steps = end >= start ? end - start : 360 - start + end;
+        for (let i = 0; i <= steps; i++) {
+          const angle = (start + i) % 360;
+          const d = _distances[angle];
           if (d > 0 && d < threshold) return true;
         }
         return false;

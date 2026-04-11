@@ -5,125 +5,46 @@ import { bluetoothBridge } from './bluetooth';
 import { lidarStore } from './lidarStore';
 import { defineBlocks } from './blockly/blocks';
 import { defineGenerators } from './blockly/generator';
-import { javascriptGenerator } from 'blockly/javascript';
-import { t, setLanguage, getLanguage, type Language } from './i18n';
-import { LidarView } from './lidarView';
-import { SimulationView } from './simulation';
-import ExecutorWorker from './executor.worker?worker';
+import { t } from './i18n';
+import { UIManager } from './ui';
+import { runProgram, emergencyStop, worker, isRunning } from './execution';
 import { Toast } from './toast';
 import './style.css';
 
 defineBlocks();
 defineGenerators();
 
-// ── Active bridge transport ──
 let activeBridge: IBridgeTransport = serialBridge;
 (window as any).serialBridge = activeBridge;
 
-// === Execution State Management ===
-let _isRunning = false;
-let _isLiveRun = false;
-let _execStartTime = 0;
-let _execTimerInterval: ReturnType<typeof setInterval> | null = null;
-let _execAutoHideTimeout: ReturnType<typeof setTimeout> | null = null;
-
-let worker: Worker | null = null;
-let lidarView: LidarView | null = null;
-let simulationView: SimulationView | null = null;
-
-const handleLidarData = (points: { angle: number; distance: number }[]) => {
-  lidarStore.update(points);
-  if (lidarView) {
-    lidarView.update(lidarStore.getAllDistances());
-  }
-  if (simulationView) {
-    simulationView.setLidarData(lidarStore.getAllDistances());
-  }
-  if (worker) {
-    worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
-  }
-};
-
-const handleRobotStatus = (status: 'connected' | 'disconnected' | 'searching') => {
-  if (status === 'connected') Toast.success(t('robot_connected'));
-  else if (status === 'disconnected') Toast.error(t('robot_disconnected'));
-  updateUI();
-};
-
-function setActiveBridge(bridge: IBridgeTransport) {
-  activeBridge = bridge;
-  (window as any).serialBridge = bridge;
-  updateUI();
-}
-
-serialBridge.onLidarData(handleLidarData);
-bluetoothBridge.onLidarData(handleLidarData);
-serialBridge.onRobotStatus(handleRobotStatus);
-bluetoothBridge.onRobotStatus(handleRobotStatus);
-
-const toolbox = `
+const getToolbox = () => `
   <xml xmlns="https://developers.google.com/blockly/xml">
     <category name="${t('movement')}" colour="210">
       <block type="lidarbot_move">
-        <value name="SPEED">
-          <shadow type="math_number">
-            <field name="NUM">50</field>
-          </shadow>
-        </value>
-        <value name="DURATION">
-          <shadow type="math_number">
-            <field name="NUM">1000</field>
-          </shadow>
-        </value>
+        <value name="SPEED"><shadow type="math_number"><field name="NUM">50</field></shadow></value>
+        <value name="DURATION"><shadow type="math_number"><field name="NUM">1000</field></shadow></value>
       </block>
       <block type="lidarbot_rotate">
-        <value name="SPEED">
-          <shadow type="math_number">
-            <field name="NUM">50</field>
-          </shadow>
-        </value>
-        <value name="DURATION">
-          <shadow type="math_number">
-            <field name="NUM">1000</field>
-          </shadow>
-        </value>
+        <value name="SPEED"><shadow type="math_number"><field name="NUM">50</field></shadow></value>
+        <value name="DURATION"><shadow type="math_number"><field name="NUM">1000</field></shadow></value>
       </block>
       <block type="lidarbot_stop"></block>
     </category>
     <category name="${t('lights')}" colour="290">
-      <block type="lidarbot_led_show">
-        <value name="DURATION">
-          <shadow type="math_number">
-            <field name="NUM">1000</field>
-          </shadow>
-        </value>
+      <block type="lidarbot_led_show"></block>
+      <block type="lidarbot_led_blink">
+        <value name="DURATION"><shadow type="math_number"><field name="NUM">1000</field></shadow></value>
       </block>
       <block type="lidarbot_set_color"></block>
     </category>
     <category name="${t('sensing')}" colour="160">
       <block type="lidarbot_get_distance">
-        <value name="ANGLE">
-          <shadow type="math_number">
-            <field name="NUM">0</field>
-          </shadow>
-        </value>
+        <value name="ANGLE"><shadow type="math_angle"><field name="NUM">0</field></shadow></value>
       </block>
       <block type="lidarbot_is_obstacle">
-        <value name="START">
-          <shadow type="math_number">
-            <field name="NUM">0</field>
-          </shadow>
-        </value>
-        <value name="END">
-          <shadow type="math_number">
-            <field name="NUM">0</field>
-          </shadow>
-        </value>
-        <value name="THRESHOLD">
-          <shadow type="math_number">
-            <field name="NUM">200</field>
-          </shadow>
-        </value>
+        <value name="START"><shadow type="math_angle"><field name="NUM">315</field></shadow></value>
+        <value name="END"><shadow type="math_angle"><field name="NUM">45</field></shadow></value>
+        <value name="THRESHOLD"><shadow type="math_number"><field name="NUM">200</field></shadow></value>
       </block>
     </category>
     <category name="${t('logic')}" colour="210">
@@ -134,11 +55,7 @@ const toolbox = `
     </category>
     <category name="${t('loops')}" colour="120">
       <block type="controls_repeat_ext">
-        <value name="TIMES">
-          <shadow type="math_number">
-            <field name="NUM">10</field>
-          </shadow>
-        </value>
+        <value name="TIMES"><shadow type="math_number"><field name="NUM">10</field></shadow></value>
       </block>
       <block type="controls_whileUntil"></block>
     </category>
@@ -150,10 +67,9 @@ const toolbox = `
 `;
 
 const workspace = Blockly.inject('blocklyDiv', {
-  toolbox: toolbox,
+  toolbox: getToolbox(),
 });
 
-// Load saved workspace if any
 const savedState = localStorage.getItem('blocklyWorkspace');
 if (savedState) {
   try {
@@ -163,7 +79,6 @@ if (savedState) {
   }
 }
 
-// Auto-save workspace
 workspace.addChangeListener((event) => {
   if (
     event.type === Blockly.Events.BLOCK_CHANGE ||
@@ -176,225 +91,70 @@ workspace.addChangeListener((event) => {
   }
 });
 
-function updateUI() {
-  const lang = getLanguage();
-  if ((window as any)._lastUILang !== lang) {
-    document.querySelectorAll('[data-i18n]').forEach((el) => {
-      const key = el.getAttribute('data-i18n') as any;
-      if (key) {
-        const translated = t(key);
-        if (el.textContent !== translated) el.textContent = translated;
-      }
-    });
-    workspace.updateToolbox(toolbox);
-    document.title = t('title');
-    (window as any)._lastUILang = lang;
+const uiManager = new UIManager(
+  workspace,
+  () => activeBridge,
+  (b: IBridgeTransport) => {
+    activeBridge = b;
+    (window as any).serialBridge = b;
+  },
+  () => isRunning,
+  getToolbox,
+);
+
+const handleLidarData = (points: { angle: number; distance: number }[]) => {
+  lidarStore.update(points);
+  if (uiManager.lidarView) {
+    uiManager.lidarView.update(lidarStore.getAllDistances());
   }
-
-  const mainConnectBtn = document.getElementById('mainConnectBtn') as HTMLButtonElement;
-  const usbDropdownBtn = document.getElementById('connectBtn') as HTMLButtonElement;
-  const bleDropdownBtn = document.getElementById('btConnectBtn') as HTMLButtonElement;
-
-  if (mainConnectBtn) {
-    const isConnected = serialBridge.isConnected || bluetoothBridge.isConnected;
-    const newText = (isConnected ? t('disconnect') : t('connect')) + ' ▾';
-    if (mainConnectBtn.textContent !== newText) mainConnectBtn.textContent = newText;
-    mainConnectBtn.classList.toggle('connected', isConnected);
+  if (uiManager.simulationView) {
+    uiManager.simulationView.setLidarData(lidarStore.getAllDistances());
   }
-
-  if (usbDropdownBtn) {
-    const isConnected = serialBridge.isConnected;
-    const newText = isConnected ? '🔌 ' + t('disconnect') : '🔌 ' + t('bridge_usb');
-    if (usbDropdownBtn.textContent !== newText) usbDropdownBtn.textContent = newText;
-    usbDropdownBtn.classList.toggle('connected', isConnected);
-    usbDropdownBtn.classList.toggle('active', activeBridge === serialBridge);
+  if (worker) {
+    worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
   }
+};
 
-  if (bleDropdownBtn) {
-    const isConnected = bluetoothBridge.isConnected;
-    const newText = isConnected ? '🔵 ' + t('disconnect_bt') : '🔵 ' + t('bridge_bt');
-    if (bleDropdownBtn.textContent !== newText) bleDropdownBtn.textContent = newText;
-    bleDropdownBtn.classList.toggle('connected', isConnected);
-    bleDropdownBtn.classList.toggle('active', activeBridge === bluetoothBridge);
-  }
-
-  const bridgeStatus = document.getElementById('bridgeStatus');
-  if (bridgeStatus) {
-    bridgeStatus.classList.toggle('connected', activeBridge.isConnected);
-  }
-
-  const robotStatus = document.getElementById('robotStatus');
-  const robotStatusText = document.getElementById('robotStatusText');
-  if (robotStatus) {
-    const status = activeBridge.robotStatus;
-    robotStatus.classList.remove('connected', 'searching', 'disconnected');
-    robotStatus.classList.add(status);
-
-    if (robotStatusText) {
-      const statusLabel =
-        status === 'connected'
-          ? t('robot_connected')
-          : status === 'searching'
-            ? t('robot_searching')
-            : t('robot_disconnected');
-      if (robotStatusText.textContent !== statusLabel) robotStatusText.textContent = statusLabel;
+const handleRobotStatus = (status: 'connected' | 'disconnected' | 'searching') => {
+  if (status === 'connected') {
+    Toast.success(t('robot_connected'));
+  } else if (status === 'disconnected') {
+    Toast.error(t('robot_disconnected'));
+    if (isRunning) {
+      emergencyStop(activeBridge, workspace, () => uiManager.updateUI());
     }
   }
+  uiManager.updateUI();
+};
 
-  const pairBtn = document.getElementById('pairBtn');
-  if (pairBtn) {
-    const newDisplay =
-      activeBridge.isConnected && activeBridge.robotStatus !== 'connected'
-        ? 'inline-block'
-        : 'none';
-    if (pairBtn.style.display !== newDisplay) pairBtn.style.display = newDisplay;
-  }
+serialBridge.onLidarData(handleLidarData);
+bluetoothBridge.onLidarData(handleLidarData);
+serialBridge.onRobotStatus(handleRobotStatus);
+bluetoothBridge.onRobotStatus(handleRobotStatus);
 
-  if (!_isRunning) {
-    const runLiveBtn = document.getElementById('runLiveBtn') as HTMLButtonElement;
-    if (runLiveBtn) runLiveBtn.disabled = activeBridge.robotStatus !== 'connected';
-    const runSimBtn = document.getElementById('runSimBtn') as HTMLButtonElement;
-    if (runSimBtn) runSimBtn.disabled = false;
-  }
-}
+window.addEventListener('virtual_lidar_data', ((e: CustomEvent) => {
+  const distances = e.detail.distances;
+  const points = distances.map((d: number, i: number) => ({ angle: i, distance: d }));
+  lidarStore.update(points);
+  if (uiManager.lidarView) uiManager.lidarView.update(distances);
+  if (uiManager.simulationView) uiManager.simulationView.setLidarData(distances);
+  if (worker) worker.postMessage({ type: 'lidar_update', distances });
+}) as EventListener);
 
-const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
-if (languageSelect) {
-  languageSelect.value = getLanguage();
-  languageSelect.addEventListener('change', (e) => {
-    setLanguage((e.target as HTMLSelectElement).value as Language);
-    const state = Blockly.serialization.workspaces.save(workspace);
-    defineBlocks();
-    workspace.clear();
-    Blockly.serialization.workspaces.load(state, workspace);
-    updateUI();
-  });
-}
+uiManager.initListeners();
+uiManager.updateUI();
 
-updateUI();
-
-const mainConnectBtn = document.getElementById('mainConnectBtn') as HTMLButtonElement;
-mainConnectBtn?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  mainConnectBtn.parentElement?.classList.toggle('active');
-  updateUI();
+document.getElementById('runLiveBtn')?.addEventListener('click', () => {
+  runProgram(true, workspace, activeBridge, uiManager.simulationView, () => uiManager.updateUI());
 });
-
-window.addEventListener('click', () => {
-  mainConnectBtn?.parentElement?.classList.remove('active');
+document.getElementById('runSimBtn')?.addEventListener('click', () => {
+  runProgram(false, workspace, activeBridge, uiManager.simulationView, () => uiManager.updateUI());
 });
-
-document.getElementById('connectBtn')?.addEventListener('click', async (e) => {
-  e.stopPropagation();
-  if (!navigator.serial) {
-    Toast.error('Web Serial API is not supported in this browser.');
-    return;
-  }
-  if (serialBridge.isConnected) {
-    await serialBridge.disconnect();
-  } else {
-    if (bluetoothBridge.isConnected) await bluetoothBridge.disconnect();
-    await serialBridge.connect();
-    if (serialBridge.isConnected) setActiveBridge(serialBridge);
-  }
-  mainConnectBtn?.parentElement?.classList.remove('active');
-  updateUI();
-});
-
-document.getElementById('btConnectBtn')?.addEventListener('click', async (e) => {
-  e.stopPropagation();
-  if (!navigator.bluetooth) {
-    Toast.error('Web Bluetooth API is not supported in this browser.');
-    return;
-  }
-  if (bluetoothBridge.isConnected) {
-    await bluetoothBridge.disconnect();
-  } else {
-    if (serialBridge.isConnected) await serialBridge.disconnect();
-    await bluetoothBridge.connect();
-    if (bluetoothBridge.isConnected) setActiveBridge(bluetoothBridge);
-  }
-  mainConnectBtn?.parentElement?.classList.remove('active');
-  updateUI();
-});
-
-document.getElementById('pairBtn')?.addEventListener('click', () => activeBridge.pair());
-
-// === Execution Engine ===
-
-function initWorker() {
-  if (worker) worker.terminate();
-  worker = new ExecutorWorker();
-}
-
-async function runProgram(isLive: boolean) {
-  if (_isRunning) return;
-  _isLiveRun = isLive;
-
-  if (!simulationView) simulationView = new SimulationView('simulationCanvas');
-  simulationView.reset();
-
-  startExecution();
-  const code = javascriptGenerator.workspaceToCode(workspace);
-  initWorker();
-
-  if (worker) {
-    worker.onmessage = async (e) => {
-      const msg = e.data;
-      if (msg.type === 'sendCommand') {
-        if (_isLiveRun) await (activeBridge.sendCommand as any)(...msg.args);
-        if (simulationView)
-          simulationView.updateCommand(...(msg.args as [number, number, number, number]));
-      } else if (msg.type === 'sendLedShow') {
-        if (_isLiveRun) await activeBridge.sendLedShow();
-        if (simulationView) simulationView.ledShow();
-      } else if (msg.type === 'sendLedColor') {
-        if (_isLiveRun) await (activeBridge.sendLedColor as any)(...msg.args);
-        if (simulationView) simulationView.setLedColor(...(msg.args as [number, number, number]));
-      } else if (msg.type === 'highlightBlock') {
-        workspace.highlightBlock(msg.id);
-      } else if (msg.type === 'finished') {
-        if (_isLiveRun) await activeBridge.sendCommand(0, 0, 0);
-        finishExecution('finished');
-      } else if (msg.type === 'stopped') {
-        if (_isLiveRun) await activeBridge.sendCommand(0, 0, 0);
-        finishExecution('stopped');
-      } else if (msg.type === 'error') {
-        console.error('Worker error:', msg.error);
-        if (_isLiveRun) await activeBridge.sendCommand(0, 0, 0);
-        finishExecution('error');
-      }
-    };
-    worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
-    worker.postMessage({ type: 'run', code });
-  }
-}
-
-document.getElementById('runLiveBtn')?.addEventListener('click', () => runProgram(true));
-document.getElementById('runSimBtn')?.addEventListener('click', () => runProgram(false));
-
-async function abortExecution() {
-  if (!_isRunning) return;
-  if (worker) worker.postMessage({ type: 'abort' });
-}
-
-async function emergencyStop() {
-  console.warn('🚨 EMERGENCY STOP TRIGGERED 🚨');
-  if (worker) {
-    worker.terminate();
-    worker = null;
-  }
-  _isRunning = false;
-  finishExecution('stopped');
-  try {
-    await activeBridge.sendCommand(0, 0, 0, 0);
-  } catch (e) {
-    console.error('E-Stop failed:', e);
-  }
-}
-
-document.getElementById('eStopBtn')?.addEventListener('click', emergencyStop);
-
+document
+  .getElementById('eStopBtn')
+  ?.addEventListener('click', () =>
+    emergencyStop(activeBridge, workspace, () => uiManager.updateUI()),
+  );
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' || e.code === 'Space') {
     if (
@@ -402,176 +162,29 @@ window.addEventListener('keydown', (e) => {
       document.activeElement?.tagName !== 'TEXTAREA'
     ) {
       e.preventDefault();
-      emergencyStop();
+      emergencyStop(activeBridge, workspace, () => uiManager.updateUI());
     }
   }
 });
 
-function startExecution() {
-  _isRunning = true;
-  _execStartTime = Date.now();
-  if (_execAutoHideTimeout) {
-    clearTimeout(_execAutoHideTimeout);
-    _execAutoHideTimeout = null;
+// PWA Installation handling
+let deferredPrompt: any;
+const installBtn = document.getElementById('installPwaBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (installBtn) {
+    installBtn.style.display = 'block';
   }
-  const bar = document.getElementById('executionBar');
-  if (bar) {
-    bar.classList.remove('hidden', 'status-finished', 'status-stopped', 'status-error');
-    bar.classList.add('status-running');
-  }
-  const icon = document.getElementById('execIcon');
-  const text = document.getElementById('execText');
-  const timer = document.getElementById('execTimer');
-  if (icon) icon.textContent = '⏳';
-  if (text) text.textContent = _isLiveRun ? t('running_program') : t('run_sim');
-  if (timer) timer.textContent = '0.0s';
+});
 
-  _execTimerInterval = setInterval(() => {
-    if (timer) {
-      const elapsed = ((Date.now() - _execStartTime) / 1000).toFixed(1);
-      timer.textContent = `${elapsed}s`;
-    }
-  }, 100);
-
-  const runLiveBtn = document.getElementById('runLiveBtn') as HTMLButtonElement;
-  const runSimBtn = document.getElementById('runSimBtn') as HTMLButtonElement;
-  const stopBtn = document.getElementById('stopBtn');
-  if (runLiveBtn) runLiveBtn.disabled = true;
-  if (runSimBtn) runSimBtn.disabled = true;
-  if (stopBtn) stopBtn.style.display = 'inline-flex';
-
-  setTimeout(() => Blockly.svgResize(workspace), 400);
-}
-
-function finishExecution(status: 'finished' | 'stopped' | 'error') {
-  _isRunning = false;
-  if (_execTimerInterval) {
-    clearInterval(_execTimerInterval);
-    _execTimerInterval = null;
-  }
-  workspace.highlightBlock(null);
-  const bar = document.getElementById('executionBar');
-  if (bar) {
-    bar.classList.remove('status-running', 'status-finished', 'status-stopped', 'status-error');
-    bar.classList.add(`status-${status}`);
-  }
-  const icon = document.getElementById('execIcon');
-  const text = document.getElementById('execText');
-  if (status === 'finished') {
-    if (icon) icon.textContent = '✅';
-    if (text) text.textContent = t('program_finished');
-  } else if (status === 'stopped') {
-    if (icon) icon.textContent = '⏹️';
-    if (text) text.textContent = t('program_stopped');
-  } else {
-    if (icon) icon.textContent = '❌';
-    if (text) text.textContent = t('program_error');
-  }
-  const stopBtn = document.getElementById('stopBtn');
-  if (stopBtn) stopBtn.style.display = 'none';
-  updateUI();
-
-  _execAutoHideTimeout = setTimeout(() => {
-    if (bar && !_isRunning) {
-      bar.classList.add('hidden');
-      setTimeout(() => Blockly.svgResize(workspace), 400);
-    }
-  }, 4000);
-}
-
-document.getElementById('stopBtn')?.addEventListener('click', () => abortExecution());
-document.getElementById('execStopBtn')?.addEventListener('click', () => abortExecution());
-
-// ── Sidebar Management ──
-const sidebarRight = document.getElementById('sidebarRight');
-const trayButtons = {
-  sim: document.getElementById('simToggleBtn') as HTMLButtonElement,
-  lidar: document.getElementById('lidarToggleBtn') as HTMLButtonElement,
-};
-const panels = {
-  sim: document.getElementById('simulationPanel'),
-  lidar: document.getElementById('lidarPanel'),
-};
-
-let activePanel: 'sim' | 'lidar' | null = null;
-
-function togglePanel(panel: 'sim' | 'lidar') {
-  if (activePanel === panel) {
-    activePanel = null;
-    sidebarRight?.classList.add('collapsed');
-  } else {
-    activePanel = panel;
-    sidebarRight?.classList.remove('collapsed');
-    if (panel === 'sim' && !simulationView) simulationView = new SimulationView('simulationCanvas');
-    if (panel === 'lidar' && !lidarView) lidarView = new LidarView('lidarCanvas');
-  }
-  Object.entries(trayButtons).forEach(([key, btn]) =>
-    btn?.classList.toggle('active', activePanel === key),
-  );
-  Object.entries(panels).forEach(([key, p]) => p?.classList.toggle('hidden', activePanel !== key));
-  setTimeout(() => {
-    Blockly.svgResize(workspace);
-    if (simulationView) (simulationView as any).resize();
-    if (lidarView) (lidarView as any).resize();
-  }, 300);
-}
-
-trayButtons.sim?.addEventListener('click', () => togglePanel('sim'));
-trayButtons.lidar?.addEventListener('click', () => togglePanel('lidar'));
-document.getElementById('resetSimBtn')?.addEventListener('click', () => simulationView?.reset());
-document
-  .getElementById('addObstacleBtn')
-  ?.addEventListener('click', () => simulationView?.addObstacle());
-
-// Sidebar Resizing Logic
-const resizer = document.getElementById('sidebarResizer');
-if (resizer && sidebarRight) {
-  let isResizing = false;
-  resizer.addEventListener('mousedown', (e) => {
-    isResizing = true;
-    resizer.classList.add('resizing');
-    document.body.style.cursor = 'col-resize';
-    e.preventDefault();
-  });
-  window.addEventListener('mousemove', (e) => {
-    if (!isResizing || !sidebarRight) return;
-    const newWidth = window.innerWidth - e.clientX;
-    const clampedWidth = Math.min(Math.max(newWidth, 200), window.innerWidth - 100);
-    sidebarRight.style.width = `${clampedWidth}px`;
-    sidebarRight.classList.remove('collapsed');
-    activePanel = activePanel || 'sim';
-    if (simulationView) (simulationView as any).resize();
-    if (lidarView) (lidarView as any).resize();
-    Blockly.svgResize(workspace);
-  });
-  window.addEventListener('mouseup', () => {
-    if (isResizing) {
-      isResizing = false;
-      resizer?.classList.remove('resizing');
-      document.body.style.cursor = '';
-    }
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
   });
 }
-
-if (window.innerWidth >= 1200) togglePanel('sim');
-
-// Virtual Lidar Loop
-let lastSimDistances: number[] = [];
-function virtualLidarLoop() {
-  if (simulationView && !activeBridge.isConnected) {
-    const distances = simulationView.getVirtualLidarData();
-    const distSum = distances.reduce((a, b) => a + b, 0);
-    const lastDistSum = lastSimDistances.reduce((a, b) => a + b, 0);
-    if (distSum !== lastDistSum) {
-      lastSimDistances = [...distances];
-      const points = distances.map((d, i) => ({ angle: i, distance: d }));
-      lidarStore.update(points);
-      if (lidarView) lidarView.update(distances);
-      if (simulationView) simulationView.setLidarData(distances);
-      if (worker) worker.postMessage({ type: 'lidar_update', distances });
-    }
-    updateUI();
-  }
-  setTimeout(virtualLidarLoop, 100);
-}
-virtualLidarLoop();

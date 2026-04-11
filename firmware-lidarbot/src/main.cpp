@@ -25,6 +25,9 @@ void Service(void * pvParameters) {
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len);
 
+int flag = 0;
+unsigned long last_command_time = 0;
+
 void setup() {
   m5.begin();
   Serial1.begin(230400, SERIAL_8N1, 16, 2);  //Lidar
@@ -75,8 +78,7 @@ void setup() {
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status){
   
 }
-int flag = 0;
-unsigned long last_command_time = 0;
+
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 {
   if(espnow.OnBotRecv(mac_addr,data,data_len)){

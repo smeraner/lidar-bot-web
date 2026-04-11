@@ -82,13 +82,18 @@ export class BluetoothBridge {
   }
 
   private handleIncomingLine(line: string) {
-    if (line.startsWith('lidar:')) {
-      const data = line.substring(6).split(',');
+    if (/^lidar:(?:\d+,\d+,?)+$/.test(line)) {
+      const dataStr = line.substring(6);
+      const data = dataStr.endsWith(',')
+        ? dataStr.substring(0, dataStr.length - 1).split(',')
+        : dataStr.split(',');
       const points: { angle: number; distance: number }[] = [];
       for (let i = 0; i < data.length; i += 2) {
-        const angle = parseInt(data[i]);
+        const rawAngle = parseInt(data[i]);
         const distance = parseInt(data[i + 1]);
-        if (!isNaN(angle) && !isNaN(distance)) {
+        if (!isNaN(rawAngle) && !isNaN(distance)) {
+          // Adjust 90 degrees so physical front (270) aligns with UI Front (0)
+          const angle = (rawAngle + 90) % 360;
           points.push({ angle, distance });
         }
       }
@@ -100,16 +105,21 @@ export class BluetoothBridge {
         if (this.robotStatusCallback) this.robotStatusCallback('connected');
       }
     } else if (line.startsWith('status:')) {
-      const status = line.substring(7);
-      if (status === 'robot_connected') {
-        this._robotStatus = 'connected';
-        if (this.robotStatusCallback) this.robotStatusCallback('connected');
-      } else if (status === 'robot_disconnected') {
-        this._robotStatus = 'disconnected';
-        if (this.robotStatusCallback) this.robotStatusCallback('disconnected');
-      } else if (status === 'robot_searching') {
-        this._robotStatus = 'searching';
-        if (this.robotStatusCallback) this.robotStatusCallback('searching');
+      const statusMatch = line.match(
+        /^status:(robot_connected|robot_disconnected|robot_searching)$/,
+      );
+      if (statusMatch) {
+        const status = statusMatch[1];
+        if (status === 'robot_connected') {
+          this._robotStatus = 'connected';
+          if (this.robotStatusCallback) this.robotStatusCallback('connected');
+        } else if (status === 'robot_disconnected') {
+          this._robotStatus = 'disconnected';
+          if (this.robotStatusCallback) this.robotStatusCallback('disconnected');
+        } else if (status === 'robot_searching') {
+          this._robotStatus = 'searching';
+          if (this.robotStatusCallback) this.robotStatusCallback('searching');
+        }
       }
     } else if (line.startsWith('debug:')) {
       console.log('Bridge Debug (BLE):', line.substring(6));

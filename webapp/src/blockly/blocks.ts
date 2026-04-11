@@ -53,10 +53,10 @@ export function defineBlocks() {
     },
   };
 
-  Blockly.Blocks['lidarbot_led_show'] = {
+  Blockly.Blocks['lidarbot_led_blink'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField(t('led_show'))
+        .appendField(t('led_blink'))
         .appendField(new FieldColour('#ffffff'), 'COLOR');
       this.appendValueInput('DURATION').setCheck('Number').appendField(t('duration'));
       this.appendDummyInput().appendField(t('ms'));
@@ -65,6 +65,16 @@ export function defineBlocks() {
       this.setNextStatement(true, null);
       this.setColour(290);
       this.setTooltip('Flash the robot LED ring with a color for a duration. Unit: ms.');
+    },
+  };
+
+  Blockly.Blocks['lidarbot_led_show'] = {
+    init: function () {
+      this.appendDummyInput().appendField(t('led_show'));
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(290);
+      this.setTooltip('Trigger the pre-programmed LED disco animation.');
     },
   };
 

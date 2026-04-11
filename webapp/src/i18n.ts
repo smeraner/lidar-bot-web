@@ -27,6 +27,7 @@ export const translations = {
     loops: 'Loops',
     math: 'Math',
     led_show: 'LED Show (Disco)',
+    led_blink: 'Blink Color',
     set_color: 'Set LED Color',
     flash_lights: 'Flash Lights',
     times: 'times',
@@ -53,6 +54,7 @@ export const translations = {
     simulation: 'Simulation',
     lidar: 'Lidar',
     reset: 'Reset',
+    install_app: 'Install App',
   },
   de: {
     title: 'LidarBot Steuerung',
@@ -80,6 +82,7 @@ export const translations = {
     loops: 'Schleifen',
     math: 'Mathe',
     led_show: 'Lichtershow (Disco)',
+    led_blink: 'Farbe Blinken',
     set_color: 'LED Farbe setzen',
     flash_lights: 'Blinken',
     times: 'Mal',
@@ -106,6 +109,7 @@ export const translations = {
     simulation: 'Simulation',
     lidar: 'Lidar',
     reset: 'Zurücksetzen',
+    install_app: 'App Installieren',
   },
 };
 

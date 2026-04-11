@@ -205,6 +205,12 @@ header h1 {
   z-index: 100;
 }
 
+.dropdown-content.right-align {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
 /* Internal container to keep the decoration and overflow: hidden */
 .dropdown-content::after {
   content: '';

@@ -19,7 +19,9 @@ BLEServer *pServer = nullptr;
 BLECharacteristic *pTxCharacteristic = nullptr;
 bool bleClientConnected = false;
 bool lastBleClientConnected = false;
-std::string bleRxBuffer = "";
+#define BLE_RX_BUF_SIZE 512
+char bleRxBuffer[BLE_RX_BUF_SIZE];
+int bleRxIndex = 0;
 unsigned long lastBleRxTime = 0;
 
 // BLE MTU for chunked sends (conservative, minus ATT overhead)
@@ -60,7 +62,12 @@ class BleServerCallbacks : public BLEServerCallbacks {
 class BleRxCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pCharacteristic) override {
     std::string rxValue = pCharacteristic->getValue();
-    bleRxBuffer += rxValue;
+    for (char c : rxValue) {
+        if (bleRxIndex < BLE_RX_BUF_SIZE - 1) {
+            bleRxBuffer[bleRxIndex++] = c;
+        }
+    }
+    bleRxBuffer[bleRxIndex] = '\0';
     lastBleRxTime = millis();
   }
 };
@@ -119,14 +126,9 @@ void processCommand(String input) {
     esp_now_send(lidarBotAddress, showData, 4);
     writeAllLn("debug:sent_ledshow_payload_4_bytes");
   } else if (input.startsWith("ledcolor:")) {
-    String rgb = input.substring(9);
-    int c1 = rgb.indexOf(',');
-    int c2 = rgb.indexOf(',', c1 + 1);
-    if (c1 > 0 && c2 > 0) {
-      uint8_t r = (uint8_t)rgb.substring(0, c1).toInt();
-      uint8_t g = (uint8_t)rgb.substring(c1 + 1, c2).toInt();
-      uint8_t b = (uint8_t)rgb.substring(c2 + 1).toInt();
-      uint8_t colorData[5] = {r, g, b, 0, 0};
+    int r, g, b;
+    if (sscanf(input.c_str(), "ledcolor:%d,%d,%d", &r, &g, &b) == 3) {
+      uint8_t colorData[5] = {(uint8_t)r, (uint8_t)g, (uint8_t)b, 0, 0};
       esp_now_send(lidarBotAddress, colorData, 5);
       writeAll("debug:sent_ledcolor_r");
       writeAll(String(r));
@@ -136,27 +138,14 @@ void processCommand(String input) {
       writeAllLn(String(b));
     }
   } else {
-    // Check for move command: x,y,z[,duration]
-    int firstComma = input.indexOf(',');
-    int secondComma = input.indexOf(',', firstComma + 1);
-    int thirdComma = input.indexOf(',', secondComma + 1);
+    int x = 0, y = 0, z = 0, duration = 0;
+    int parsedArgs = sscanf(input.c_str(), "%d,%d,%d,%d", &x, &y, &z, &duration);
 
-    if (firstComma > 0 && secondComma > 0) {
-      int x = input.substring(0, firstComma).toInt();
-      int y = input.substring(firstComma + 1, secondComma).toInt();
-      
-      int z, duration = 0;
-      if (thirdComma > 0) {
-        z = input.substring(secondComma + 1, thirdComma).toInt();
-        duration = input.substring(thirdComma + 1).toInt();
-      } else {
-        z = input.substring(secondComma + 1).toInt();
-      }
-
+    if (parsedArgs >= 3) {
       x = constrain(x, -7, 7);
       y = constrain(y, -7, 7);
 
-      if (duration > 0) {
+      if (parsedArgs == 4 && duration > 0) {
         writeAll("debug:bridge_move_timed_x"); writeAll(String(x));
         writeAll("_y"); writeAll(String(y));
         writeAll("_dur"); writeAllLn(String(duration));
@@ -168,7 +157,7 @@ void processCommand(String input) {
         moveDataArray[3] = (uint8_t)(duration >> 8);
         moveDataArray[4] = (uint8_t)(duration & 0xFF);
         esp_now_send(lidarBotAddress, moveDataArray, 6);
-        // Commands with duration clear the repeating manual command to avoid interference
+        
         lastManualX = 0;
         lastManualY = 0;
         lastManualZ = 0;
@@ -416,19 +405,31 @@ void loop() {
   }
 
   // ── Process BLE input ──
-  if (bleRxBuffer.length() > 0) {
+  if (bleRxIndex > 0) {
     if (millis() - lastBleRxTime > 1000) {
-      bleRxBuffer.clear();
+      bleRxIndex = 0;
+      bleRxBuffer[0] = '\0';
     } else {
-      size_t nlPos;
-      while ((nlPos = bleRxBuffer.find('\n')) != std::string::npos) {
-        String line = String(bleRxBuffer.substr(0, nlPos).c_str());
-        bleRxBuffer.erase(0, nlPos + 1);
-        processCommand(line);
+      for (int i = 0; i < bleRxIndex; i++) {
+        if (bleRxBuffer[i] == '\n') {
+          bleRxBuffer[i] = '\0';
+          String line = String(bleRxBuffer);
+          processCommand(line);
+          int remaining = bleRxIndex - (i + 1);
+          if (remaining > 0) {
+            memmove(bleRxBuffer, &bleRxBuffer[i + 1], remaining);
+            bleRxIndex = remaining;
+          } else {
+            bleRxIndex = 0;
+          }
+          bleRxBuffer[bleRxIndex] = '\0';
+          i = -1;
+        }
       }
-      if (bleRxBuffer.length() >= 256) {
-        processCommand(String(bleRxBuffer.c_str()));
-        bleRxBuffer.clear();
+      if (bleRxIndex >= BLE_RX_BUF_SIZE - 1) {
+        processCommand(String(bleRxBuffer));
+        bleRxIndex = 0;
+        bleRxBuffer[0] = '\0';
       }
     }
   }
