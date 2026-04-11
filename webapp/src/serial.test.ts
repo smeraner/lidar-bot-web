@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { SerialBridge } from './serial';
 
 describe('SerialBridge', () => {
@@ -7,8 +7,8 @@ describe('SerialBridge', () => {
   beforeEach(() => {
     bridge = new SerialBridge();
     // Mock the global navigator if not present
-    if (!global.navigator) {
-      (global as any).navigator = {};
+    if (typeof globalThis !== 'undefined' && !(globalThis as any).navigator) {
+      (globalThis as any).navigator = {};
     }
   });
 

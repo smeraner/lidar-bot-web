@@ -1,3 +1,5 @@
+import { Toast } from './toast';
+
 export interface IBridgeTransport {
   readonly isConnected: boolean;
   readonly robotStatus: 'connected' | 'disconnected' | 'searching';
@@ -59,7 +61,19 @@ export class SerialBridge implements IBridgeTransport {
     } catch (e: any) {
       this._isConnected = false;
       console.error('Serial Connection Failed', e);
-      alert(`Serial Connection Failed: ${e?.message || e}`);
+      Toast.error(`Serial Connection Failed: ${e?.message || e}`);
+    }
+  }
+
+  constructor() {
+    if (navigator.serial) {
+      navigator.serial.addEventListener('disconnect', (event) => {
+        if (this.port === event.target) {
+          console.warn('Serial device disconnected');
+          Toast.warn('Serial device disconnected');
+          this.disconnect();
+        }
+      });
     }
   }
 

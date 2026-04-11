@@ -1,4 +1,7 @@
+import { Toast } from './toast';
+
 // Nordic UART Service UUIDs (must match firmware)
+
 const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const NUS_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Bridge → App (Notify)
 const NUS_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // App → Bridge (Write)
@@ -58,7 +61,7 @@ export class BluetoothBridge {
     } catch (e: any) {
       this._isConnected = false;
       console.error('BLE Connection Failed', e);
-      alert(`BLE Connection Failed: ${e?.message || e}`);
+      Toast.error(`BLE Connection Failed: ${e?.message || e}`);
     }
   }
 

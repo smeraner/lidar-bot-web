@@ -23,6 +23,9 @@ export function defineBlocks() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
+      this.setTooltip(
+        'Move the robot in a direction. Speed: 0-100%, Duration: ms (0 for continuous).',
+      );
     },
   };
 
@@ -44,6 +47,9 @@ export function defineBlocks() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(230);
+      this.setTooltip(
+        'Rotate the robot left or right. Speed: 0-100%, Duration: ms (0 for continuous).',
+      );
     },
   };
 
@@ -58,6 +64,7 @@ export function defineBlocks() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(290);
+      this.setTooltip('Flash the robot LED ring with a color for a duration. Unit: ms.');
     },
   };
 
@@ -69,6 +76,7 @@ export function defineBlocks() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(290);
+      this.setTooltip('Set the robot LED ring to a static color.');
     },
   };
 
@@ -77,6 +85,9 @@ export function defineBlocks() {
       this.appendValueInput('ANGLE').setCheck('Number').appendField(t('distance'));
       this.setOutput(true, 'Number');
       this.setColour(160);
+      this.setTooltip(
+        'Get the current distance reading in mm at a specific angle (0-359). 0 is front.',
+      );
     },
   };
 
@@ -88,6 +99,9 @@ export function defineBlocks() {
       this.setInputsInline(true);
       this.setOutput(true, 'Boolean');
       this.setColour(160);
+      this.setTooltip(
+        'Check if any obstacle is detected within an angle range below the threshold (mm).',
+      );
     },
   };
 
@@ -97,6 +111,7 @@ export function defineBlocks() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour(0);
+      this.setTooltip('Immediately stop all robot movements.');
     },
   };
 }

@@ -36,6 +36,15 @@ bool lastBotConnected = false;
 bool isPairingWindowActive = false;
 unsigned long pairingWindowStartTime = 0;
 
+// ──── Heartbeat / Safety Watchdog ────
+int8_t lastManualX = 0;
+int8_t lastManualY = 0;
+int8_t lastManualZ = 0;
+unsigned long lastWebTrafficTime = 0;
+unsigned long lastHeartbeatTime = 0;
+const unsigned long HEARTBEAT_INTERVAL = 200;
+const unsigned long WEB_UI_TIMEOUT = 2000;
+
 // ──── BLE Callbacks ────
 class BleServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer* pServer) override {
@@ -81,6 +90,9 @@ void writeAllLn(const String &msg) {
 void processCommand(String input) {
   input.trim();
   if (input.length() == 0) return;
+
+  lastWebTrafficTime = millis();
+
 
   // LCD echo
   M5.Lcd.fillRect(0, 25, 160, 20, BLACK);
@@ -156,19 +168,29 @@ void processCommand(String input) {
         moveDataArray[3] = (uint8_t)(duration >> 8);
         moveDataArray[4] = (uint8_t)(duration & 0xFF);
         esp_now_send(lidarBotAddress, moveDataArray, 6);
+        // Commands with duration clear the repeating manual command to avoid interference
+        lastManualX = 0;
+        lastManualY = 0;
+        lastManualZ = 0;
       } else {
         writeAll("debug:bridge_move_simple_x"); writeAll(String(x));
         writeAll("_y"); writeAllLn(String(y));
 
+        lastManualX = (int8_t)x;
+        lastManualY = (int8_t)y;
+        lastManualZ = (int8_t)z;
+
         uint8_t moveDataArray[3];
-        moveDataArray[0] = (uint8_t)(int8_t)x;
-        moveDataArray[1] = (uint8_t)(int8_t)y;
-        moveDataArray[2] = (uint8_t)(z > 0 ? 1 : 0);
+        moveDataArray[0] = (uint8_t)lastManualX;
+        moveDataArray[1] = (uint8_t)lastManualY;
+        moveDataArray[2] = (uint8_t)lastManualZ;
         esp_now_send(lidarBotAddress, moveDataArray, 3);
       }
     }
   }
 }
+
+
 
 // ──── ESP-NOW Callbacks ────
 
@@ -408,6 +430,25 @@ void loop() {
         processCommand(String(bleRxBuffer.c_str()));
         bleRxBuffer.clear();
       }
+    }
+  }
+  // ── Process Heartbeat (Repeat last manual command) ──
+  if (millis() - lastHeartbeatTime > HEARTBEAT_INTERVAL) {
+    lastHeartbeatTime = millis();
+
+    // Check for Web UI timeout (safety)
+    if (millis() - lastWebTrafficTime > WEB_UI_TIMEOUT && lastWebTrafficTime > 0) {
+      if (lastManualX != 0 || lastManualY != 0 || lastManualZ != 0) {
+        writeAllLn("debug:web_ui_timeout_stalling_bot");
+        lastManualX = 0; lastManualY = 0; lastManualZ = 0;
+      }
+    }
+
+    // Always send current manual state if robot is connected. 
+    // This satisfies the bot's 500ms watchdog even if X/Y/Z are 0.
+    if (botConnected) {
+      uint8_t hbData[3] = { (uint8_t)lastManualX, (uint8_t)lastManualY, (uint8_t)lastManualZ };
+      esp_now_send(lidarBotAddress, hbData, 3);
     }
   }
 }

@@ -35,6 +35,7 @@
           <button id="pairBtn" class="premium-btn" data-i18n="pair" style="display: none;">Pair Robot</button>
           <button id="runLiveBtn" class="premium-btn primary" data-i18n="run_live" disabled>Run Live</button>
           <button id="stopBtn" class="premium-btn danger" style="display: none;" data-i18n="stop_program">Stop</button>
+          <button id="eStopBtn" class="premium-btn danger-estop" title="Emergency Stop (Esc)">🚨 E-STOP</button>
         </div>
       </header>
       <div id="executionBar" class="execution-bar hidden">
@@ -52,7 +53,9 @@
         <div id="blocklyDiv"></div>
         
         <aside id="sidebarRight" class="collapsed">
+          <div class="resizer" id="sidebarResizer"></div>
           <div class="sidebar-tray">
+
             <button id="simToggleBtn" class="tray-btn" title="Simulation">🤖</button>
             <button id="lidarToggleBtn" class="tray-btn" title="Lidar">📡</button>
           </div>

@@ -7,41 +7,42 @@ export function defineGenerators() {
   javascriptGenerator.forBlock['lidarbot_move'] = function (block: any) {
     const direction = block.getFieldValue('DIRECTION');
     const speed = javascriptGenerator.valueToCode(block, 'SPEED', Order.ATOMIC) || '50';
-    const duration = javascriptGenerator.valueToCode(block, 'DURATION', Order.ATOMIC) || '1000';
+    const durationInput =
+      javascriptGenerator.valueToCode(block, 'DURATION', Order.ATOMIC) || '1000';
 
-    const x = 0,
-      y = 0,
-      z = 0;
-    // Map speed (0-100) to kinematics (0-7)
-    const sCode = `Math.round(parseInt(${speed}) * 7 / 100)`;
+    // Map speed (0-100) to kinematics (0-7), clamped to 100 max. Duration clamped to non-negative.
+    const sCode = `Math.round(Math.min(100, Math.max(0, parseInt(${speed}))) * 7 / 100)`;
+    const durCode = `Math.max(0, parseInt(${durationInput}))`;
 
     let moveCode = '';
     if (direction === 'FORWARD')
-      moveCode = `await serialBridge.sendCommand(0, ${sCode}, 0, ${duration});`;
+      moveCode = `await serialBridge.sendCommand(0, ${sCode}, 0, ${durCode});`;
     if (direction === 'BACKWARD')
-      moveCode = `await serialBridge.sendCommand(0, -(${sCode}), 0, ${duration});`;
+      moveCode = `await serialBridge.sendCommand(0, -(${sCode}), 0, ${durCode});`;
     if (direction === 'LEFT')
-      moveCode = `await serialBridge.sendCommand(-(${sCode}), 0, 0, ${duration});`;
+      moveCode = `await serialBridge.sendCommand(-(${sCode}), 0, 0, ${durCode});`;
     if (direction === 'RIGHT')
-      moveCode = `await serialBridge.sendCommand(${sCode}, 0, 0, ${duration});`;
+      moveCode = `await serialBridge.sendCommand(${sCode}, 0, 0, ${durCode});`;
 
-    return `__checkAbort();\n${moveCode}\nawait __sleep(${duration});\n`;
+    return `__checkAbort();\n${moveCode}\nawait __sleep(${durCode});\n`;
   };
 
   javascriptGenerator.forBlock['lidarbot_rotate'] = function (block: any) {
     const direction = block.getFieldValue('DIRECTION');
     const speed = javascriptGenerator.valueToCode(block, 'SPEED', Order.ATOMIC) || '50';
-    const duration = javascriptGenerator.valueToCode(block, 'DURATION', Order.ATOMIC) || '1000';
+    const durationInput =
+      javascriptGenerator.valueToCode(block, 'DURATION', Order.ATOMIC) || '1000';
 
-    const sCode = `Math.round(parseInt(${speed}) * 7 / 100)`;
+    const sCode = `Math.round(Math.min(100, Math.max(0, parseInt(${speed}))) * 7 / 100)`;
+    const durCode = `Math.max(0, parseInt(${durationInput}))`;
 
     let moveCode = '';
     if (direction === 'LEFT')
-      moveCode = `await serialBridge.sendCommand(0, 0, -(${sCode}), ${duration});`;
+      moveCode = `await serialBridge.sendCommand(0, 0, -(${sCode}), ${durCode});`;
     if (direction === 'RIGHT')
-      moveCode = `await serialBridge.sendCommand(0, 0, ${sCode}, ${duration});`;
+      moveCode = `await serialBridge.sendCommand(0, 0, ${sCode}, ${durCode});`;
 
-    return `__checkAbort();\n${moveCode}\nawait __sleep(${duration});\n`;
+    return `__checkAbort();\n${moveCode}\nawait __sleep(${durCode});\n`;
   };
 
   javascriptGenerator.forBlock['lidarbot_stop'] = function () {
