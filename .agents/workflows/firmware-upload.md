@@ -7,17 +7,23 @@ description: How to build, flash, and verify the ESP32 bridge firmware.
 Follow these steps to deploy and verify changes to the firmware:
 
 // turbo
-1. **Build and Upload**:
-   Run the PlatformIO upload command from the project root. This will automatically compile and flash the connected M5 Stick-C.
+1. **Linting and Static Analysis**:
+   Before compiling and uploading, verify the firmware passes Cppcheck.
    ```powershell
-   cd firmware
-   & "C:\Users\Simon\.platformio\penv\Scripts\pio.exe" run --target upload
+   npm run lint-firmware
    ```
 
-2. **Verify Execution**:
+2. **Build and Upload**:
+   You can use the new npm wrapper script from the project root to automatically compile and flash the connected M5 Stick-C (ensure it is connected).
+   ```powershell
+   npm run flash-bridge
+   ```
+   *(Alternatively, run the PlatformIO command directly: `cd firmware-bridge && & "C:\Users\Simon\.platformio\penv\Scripts\pio.exe" run --target upload`)*
+
+3. **Verify Execution**:
    After a successful upload, open the serial monitor to ensure the bridge is running correctly. Look for the "Bridge Ready" state or status updates.
    ```powershell
-   & "C:\Users\Simon\.platformio\penv\Scripts\pio.exe" device monitor -b 115200
+   npm run monitor-bridge
    ```
    *Expected Output*: You should see `status:robot_searching` if the robot is not yet paired, or `status:robot_connected` if it is.
 

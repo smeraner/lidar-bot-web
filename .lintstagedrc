@@ -1,0 +1,6 @@
+{
+  "webapp/src/**/*.{ts,tsx,css,html}": [
+    "npm run format --workspace=webapp",
+    "npm run lint --workspace=webapp"
+  ]
+}

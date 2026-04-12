@@ -190,9 +190,14 @@ void LidarCar::setServo1Angle(uint8_t angle)// angle: 0 ~ 180
  * - Car direction and speed control
  */
 void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A, uint16_t durationMs)// X, Y, A: -7 ~ 7
-{  
-  if (durationMs > 0) {
-    _stopTime = millis() + durationMs;
+{
+  // Safety clamping for X and Y inputs to prevent out-of-bounds array access
+  if (X < -7) X = -7;
+  if (X > 7) X = 7;
+  if (Y < -7) Y = -7;
+  if (Y > 7) Y = 7;
+
+  if (durationMs > 0) {    _stopTime = millis() + durationMs;
   } else {
     // Any command without a duration (including a stop command) clears the timer
     _stopTime = 0;

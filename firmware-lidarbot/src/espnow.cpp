@@ -6,7 +6,10 @@
 
 Espnow::Espnow(void)
 {
-  
+  memset(peer_addr, 0, sizeof(peer_addr));
+  memset(sta_addr, 0, sizeof(sta_addr));
+  memset(connect_addr, 0, sizeof(connect_addr));
+  connect_num = 0;
 }
 
 void Espnow::BotInit(void){
