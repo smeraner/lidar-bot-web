@@ -2,7 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>webapp</title>
   </head>
@@ -21,6 +23,7 @@
           </div>
         </div>
         <div class="controls">
+          <button id="installPwaBtn" class="premium-btn primary" style="display: none;" data-i18n="install_app">Install App</button>
           <select id="languageSelect" class="premium-select">
             <option value="en">English</option>
             <option value="de">Deutsch</option>
@@ -35,6 +38,7 @@
           <button id="pairBtn" class="premium-btn" data-i18n="pair" style="display: none;">Pair Robot</button>
           <button id="runLiveBtn" class="premium-btn primary" data-i18n="run_live" disabled>Run Live</button>
           <button id="stopBtn" class="premium-btn danger" style="display: none;" data-i18n="stop_program">Stop</button>
+          <button id="eStopBtn" class="premium-btn danger-estop" title="Emergency Stop (Esc)">🚨 E-STOP</button>
         </div>
       </header>
       <div id="executionBar" class="execution-bar hidden">
@@ -52,7 +56,9 @@
         <div id="blocklyDiv"></div>
         
         <aside id="sidebarRight" class="collapsed">
+          <div class="resizer" id="sidebarResizer"></div>
           <div class="sidebar-tray">
+
             <button id="simToggleBtn" class="tray-btn" title="Simulation">🤖</button>
             <button id="lidarToggleBtn" class="tray-btn" title="Lidar">📡</button>
           </div>
@@ -61,7 +67,13 @@
               <div class="panel-header">
                 <h3 data-i18n="simulation">Simulation</h3>
                 <div class="panel-actions">
-                  <button id="addObstacleBtn" class="text-btn" title="Add Obstacle">⊕ Obstacle</button>
+                  <div class="dropdown">
+                    <button id="addObstacleMenuBtn" class="text-btn" title="Add Obstacle">⊕ Obstacle ▾</button>
+                    <div class="dropdown-content right-align">
+                      <button id="addCircleBtn" class="dropdown-item">● Circle (Pillar)</button>
+                      <button id="addRectBtn" class="dropdown-item">⬛ Rectangle (Wall)</button>
+                    </div>
+                  </div>
                   <button id="runSimBtn" class="premium-btn sm" data-i18n="run_sim">Run Simulation</button>
                   <button id="resetSimBtn" class="text-btn" data-i18n="reset">Reset</button>
                 </div>

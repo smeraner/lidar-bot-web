@@ -19,7 +19,9 @@ BLEServer *pServer = nullptr;
 BLECharacteristic *pTxCharacteristic = nullptr;
 bool bleClientConnected = false;
 bool lastBleClientConnected = false;
-std::string bleRxBuffer = "";
+#define BLE_RX_BUF_SIZE 512
+char bleRxBuffer[BLE_RX_BUF_SIZE];
+int bleRxIndex = 0;
 unsigned long lastBleRxTime = 0;
 
 // BLE MTU for chunked sends (conservative, minus ATT overhead)
@@ -36,6 +38,15 @@ bool lastBotConnected = false;
 bool isPairingWindowActive = false;
 unsigned long pairingWindowStartTime = 0;
 
+// ──── Heartbeat / Safety Watchdog ────
+int8_t lastManualX = 0;
+int8_t lastManualY = 0;
+int8_t lastManualZ = 0;
+unsigned long lastWebTrafficTime = 0;
+unsigned long lastHeartbeatTime = 0;
+const unsigned long HEARTBEAT_INTERVAL = 200;
+const unsigned long WEB_UI_TIMEOUT = 2000;
+
 // ──── BLE Callbacks ────
 class BleServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer* pServer) override {
@@ -51,7 +62,12 @@ class BleServerCallbacks : public BLEServerCallbacks {
 class BleRxCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pCharacteristic) override {
     std::string rxValue = pCharacteristic->getValue();
-    bleRxBuffer += rxValue;
+    for (char c : rxValue) {
+        if (bleRxIndex < BLE_RX_BUF_SIZE - 1) {
+            bleRxBuffer[bleRxIndex++] = c;
+        }
+    }
+    bleRxBuffer[bleRxIndex] = '\0';
     lastBleRxTime = millis();
   }
 };
@@ -82,6 +98,9 @@ void processCommand(String input) {
   input.trim();
   if (input.length() == 0) return;
 
+  lastWebTrafficTime = millis();
+
+
   // LCD echo
   M5.Lcd.fillRect(0, 25, 160, 20, BLACK);
   M5.Lcd.setCursor(0, 25);
@@ -107,14 +126,9 @@ void processCommand(String input) {
     esp_now_send(lidarBotAddress, showData, 4);
     writeAllLn("debug:sent_ledshow_payload_4_bytes");
   } else if (input.startsWith("ledcolor:")) {
-    String rgb = input.substring(9);
-    int c1 = rgb.indexOf(',');
-    int c2 = rgb.indexOf(',', c1 + 1);
-    if (c1 > 0 && c2 > 0) {
-      uint8_t r = (uint8_t)rgb.substring(0, c1).toInt();
-      uint8_t g = (uint8_t)rgb.substring(c1 + 1, c2).toInt();
-      uint8_t b = (uint8_t)rgb.substring(c2 + 1).toInt();
-      uint8_t colorData[5] = {r, g, b, 0, 0};
+    int r, g, b;
+    if (sscanf(input.c_str(), "ledcolor:%d,%d,%d", &r, &g, &b) == 3) {
+      uint8_t colorData[5] = {(uint8_t)r, (uint8_t)g, (uint8_t)b, 0, 0};
       esp_now_send(lidarBotAddress, colorData, 5);
       writeAll("debug:sent_ledcolor_r");
       writeAll(String(r));
@@ -124,27 +138,14 @@ void processCommand(String input) {
       writeAllLn(String(b));
     }
   } else {
-    // Check for move command: x,y,z[,duration]
-    int firstComma = input.indexOf(',');
-    int secondComma = input.indexOf(',', firstComma + 1);
-    int thirdComma = input.indexOf(',', secondComma + 1);
+    int x = 0, y = 0, z = 0, duration = 0;
+    int parsedArgs = sscanf(input.c_str(), "%d,%d,%d,%d", &x, &y, &z, &duration);
 
-    if (firstComma > 0 && secondComma > 0) {
-      int x = input.substring(0, firstComma).toInt();
-      int y = input.substring(firstComma + 1, secondComma).toInt();
-      
-      int z, duration = 0;
-      if (thirdComma > 0) {
-        z = input.substring(secondComma + 1, thirdComma).toInt();
-        duration = input.substring(thirdComma + 1).toInt();
-      } else {
-        z = input.substring(secondComma + 1).toInt();
-      }
-
+    if (parsedArgs >= 3) {
       x = constrain(x, -7, 7);
       y = constrain(y, -7, 7);
 
-      if (duration > 0) {
+      if (parsedArgs == 4 && duration > 0) {
         writeAll("debug:bridge_move_timed_x"); writeAll(String(x));
         writeAll("_y"); writeAll(String(y));
         writeAll("_dur"); writeAllLn(String(duration));
@@ -156,19 +157,29 @@ void processCommand(String input) {
         moveDataArray[3] = (uint8_t)(duration >> 8);
         moveDataArray[4] = (uint8_t)(duration & 0xFF);
         esp_now_send(lidarBotAddress, moveDataArray, 6);
+        
+        lastManualX = 0;
+        lastManualY = 0;
+        lastManualZ = 0;
       } else {
         writeAll("debug:bridge_move_simple_x"); writeAll(String(x));
         writeAll("_y"); writeAllLn(String(y));
 
+        lastManualX = (int8_t)x;
+        lastManualY = (int8_t)y;
+        lastManualZ = (int8_t)z;
+
         uint8_t moveDataArray[3];
-        moveDataArray[0] = (uint8_t)(int8_t)x;
-        moveDataArray[1] = (uint8_t)(int8_t)y;
-        moveDataArray[2] = (uint8_t)(z > 0 ? 1 : 0);
+        moveDataArray[0] = (uint8_t)lastManualX;
+        moveDataArray[1] = (uint8_t)lastManualY;
+        moveDataArray[2] = (uint8_t)lastManualZ;
         esp_now_send(lidarBotAddress, moveDataArray, 3);
       }
     }
   }
 }
+
+
 
 // ──── ESP-NOW Callbacks ────
 
@@ -394,20 +405,51 @@ void loop() {
   }
 
   // ── Process BLE input ──
-  if (bleRxBuffer.length() > 0) {
+  if (bleRxIndex > 0) {
     if (millis() - lastBleRxTime > 1000) {
-      bleRxBuffer.clear();
+      bleRxIndex = 0;
+      bleRxBuffer[0] = '\0';
     } else {
-      size_t nlPos;
-      while ((nlPos = bleRxBuffer.find('\n')) != std::string::npos) {
-        String line = String(bleRxBuffer.substr(0, nlPos).c_str());
-        bleRxBuffer.erase(0, nlPos + 1);
-        processCommand(line);
+      for (int i = 0; i < bleRxIndex; i++) {
+        if (bleRxBuffer[i] == '\n') {
+          bleRxBuffer[i] = '\0';
+          String line = String(bleRxBuffer);
+          processCommand(line);
+          int remaining = bleRxIndex - (i + 1);
+          if (remaining > 0) {
+            memmove(bleRxBuffer, &bleRxBuffer[i + 1], remaining);
+            bleRxIndex = remaining;
+          } else {
+            bleRxIndex = 0;
+          }
+          bleRxBuffer[bleRxIndex] = '\0';
+          i = -1;
+        }
       }
-      if (bleRxBuffer.length() >= 256) {
-        processCommand(String(bleRxBuffer.c_str()));
-        bleRxBuffer.clear();
+      if (bleRxIndex >= BLE_RX_BUF_SIZE - 1) {
+        processCommand(String(bleRxBuffer));
+        bleRxIndex = 0;
+        bleRxBuffer[0] = '\0';
       }
+    }
+  }
+  // ── Process Heartbeat (Repeat last manual command) ──
+  if (millis() - lastHeartbeatTime > HEARTBEAT_INTERVAL) {
+    lastHeartbeatTime = millis();
+
+    // Check for Web UI timeout (safety)
+    if (millis() - lastWebTrafficTime > WEB_UI_TIMEOUT && lastWebTrafficTime > 0) {
+      if (lastManualX != 0 || lastManualY != 0 || lastManualZ != 0) {
+        writeAllLn("debug:web_ui_timeout_stalling_bot");
+        lastManualX = 0; lastManualY = 0; lastManualZ = 0;
+      }
+    }
+
+    // Always send current manual state if robot is connected. 
+    // This satisfies the bot's 500ms watchdog even if X/Y/Z are 0.
+    if (botConnected) {
+      uint8_t hbData[3] = { (uint8_t)lastManualX, (uint8_t)lastManualY, (uint8_t)lastManualZ };
+      esp_now_send(lidarBotAddress, hbData, 3);
     }
   }
 }

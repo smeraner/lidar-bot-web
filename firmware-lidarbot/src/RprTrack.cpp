@@ -9,7 +9,7 @@ Rprtrack::Rprtrack(){
 }
 
 void Rprtrack::SensorStatus(void){ 
-  uint8_t level;
+  uint8_t level = 0;
   Wire.beginTransmission(0x5a);
   Wire.write(0x00);
   Wire.endTransmission();

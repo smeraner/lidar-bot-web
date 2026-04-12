@@ -28,12 +28,21 @@ This skill provides guidelines and audits for maintaining and improving the Lida
 - **Types**: Always use explicit types for Serial parameters and Blockly block states.
 - **Documentation**: Keep `readme.md` updated with any protocol changes.
 
-## 🧪 Workflow Awareness
-Before concluding any feature implementation, refer to the following workflows in `.agent/workflows/`:
+## 🧪 Testing & Automation Workflows
+Before concluding any feature implementation, ensure you utilize the following automated pipelines and scripts:
+
+- **Web Tests:** Run `npm run test` in the `webapp` directory (powered by Vitest).
+- **Web Linting:** Run `npm run lint` and `npm run format` (powered by ESLint + Prettier).
+- **Firmware Checks:** Run `npm run lint-firmware` at the project root to run Cppcheck via PlatformIO.
+- **Pre-commit:** Note that `husky` and `lint-staged` are active and will run formatting and testing automatically on commit.
+
+Refer to the following workflows in `.agent/workflows/` for manual testing:
 - **[/web-testing](file:///d:/Projekte/LidarBotWeb/.agent/workflows/web-testing.md)**: Steps for validating the Web Serial connection, Blockly workspace, and code generation.
 - **[/firmware-upload](file:///d:/Projekte/LidarBotWeb/.agent/workflows/firmware-upload.md)**: Steps for building, flashing, and verifying the ESP32 bridge firmware.
 
 ## 🔍 Pre-Submission Checklist
+- [ ] Do automated tests pass (`npm run test`)?
+- [ ] Are there zero linting errors (`npm run lint`)?
 - [ ] Are all serial commands terminated with `\n`?
 - [ ] Does the `webapp` handle serial disconnection gracefully?
 - [ ] Is the Blockly toolbox categorized for easy navigation?

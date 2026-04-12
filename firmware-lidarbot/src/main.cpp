@@ -25,6 +25,9 @@ void Service(void * pvParameters) {
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len);
 
+int flag = 0;
+unsigned long last_command_time = 0;
+
 void setup() {
   m5.begin();
   Serial1.begin(230400, SERIAL_8N1, 16, 2);  //Lidar
@@ -52,7 +55,11 @@ void setup() {
   //!Motor
   lidarcar.Init();
 
+  //!Watchdog
+  last_command_time = millis();
+
   //!Camrea
+
   i2c.master_start();
 
   //!Service
@@ -71,13 +78,15 @@ void setup() {
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status){
   
 }
-int flag = 0;
+
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 {
   if(espnow.OnBotRecv(mac_addr,data,data_len)){
     return;
   }
   
+  last_command_time = millis();
+
  if((data_len == 3) && (!flag)) {
     Serial.printf("debug:bot_move_3b x=%d y=%d z=%d\n", (int8_t)data[0], (int8_t)data[1], data[2]);
     lidarcar.ControlWheel(data[0], data[1], data[2], 0);
@@ -105,6 +114,11 @@ void loop()
   lidarcar.MapDisplay();
   lidarcar.Update();
   //lidarcar.ControlMode();
+
+  // Watchdog to stop car if connection lost for 500ms in Remote mode (flag == 0)
+  if (flag == 0 && millis() - last_command_time > 500) {
+    lidarcar.ControlWheel(0, 0, 0, 0);
+  }
   
   if(digitalRead(37) == LOW){
    flag++;
