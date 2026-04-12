@@ -1,7 +1,7 @@
 #ifndef __LIDAR_H__
 #define __LIDAR_H__
 #include <M5Stack.h>
-#include "rprtrack.h"
+#include "RprTrack.h"
 
 //uint8_t  rent_pp[9];
 

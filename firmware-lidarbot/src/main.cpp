@@ -1,8 +1,8 @@
 #include <M5Stack.h>
 #include <esp_now.h>
 #include "espnow.h"
-#include "lidarcar.h"
-#include "rprtrack.h"
+#include "LidarCar.h"
+#include "RprTrack.h"
 #include "iic.h"
 #include "AccessService.h"
 
