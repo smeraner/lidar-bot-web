@@ -3,7 +3,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: process.env.GITHUB_ACTIONS ? '/LidarBotWeb/' : '/',
+  base: process.env.GITHUB_ACTIONS ? '/lidar-bot-web/' : '/',
   plugins: [
     basicSsl(),
     VitePWA({
