@@ -1,5 +1,5 @@
 {
-    "name": "lidarbotweb",
+    "name": "lidar-bot-web",
     "version": "1.0.0",
     "description": "LidarBotWeb",
     "main": "index.js",
