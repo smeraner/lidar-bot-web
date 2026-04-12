@@ -102,7 +102,13 @@ const uiManager = new UIManager(
   getToolbox,
 );
 
-const handleLidarData = (points: { angle: number; distance: number }[]) => {
+const handleLidarData = (rawPoints: { angle: number; distance: number }[]) => {
+  // Translate Hardware Coordinate System (0=Right) to Web Logical (0=Front) + 7° mount offset
+  const points = rawPoints.map((p) => ({
+    angle: Math.round(p.angle + 97) % 360,
+    distance: p.distance,
+  }));
+
   lidarStore.update(points);
   if (uiManager.lidarView) {
     uiManager.lidarView.update(lidarStore.getAllDistances());
