@@ -18,9 +18,6 @@ export class SimulationView {
   private heading = 0; // degrees, 0 is North/Up
   private path: { x: number; y: number }[] = [];
   private lidarDistances: number[] = new Array(360).fill(0);
-  private scanPosX = 0;
-  private scanPosY = 0;
-  private scanHeading = 0;
   private ledColor = '#1e293b';
   private ledShowInterval: any = null;
 
@@ -140,9 +137,6 @@ export class SimulationView {
     this.posX = 0;
     this.posY = 0;
     this.heading = 0;
-    this.scanPosX = 0;
-    this.scanPosY = 0;
-    this.scanHeading = 0;
     this.path = [{ x: 0, y: 0 }];
     this.panX = 0;
     this.panY = 0;
@@ -214,10 +208,6 @@ export class SimulationView {
   getVirtualLidarData(): number[] {
     const distances = new Array(360).fill(0);
     // Capture state for visual alignment
-    this.scanPosX = this.posX;
-    this.scanPosY = this.posY;
-    this.scanHeading = this.heading;
-
     for (let i = 0; i < 360; i++) {
       // Angle 0 is Front. North is 90 on unit circle.
       const angleDeg = 90 - (this.heading + i);
