@@ -226,12 +226,6 @@ void LidarCar::ControlWheel(int8_t X, int8_t Y, byte A, uint16_t durationMs)// X
   Serial2.write(wheelPowerD);
   Serial2.write(0x55);
 
-  if (wheelPowerA != 0 || wheelPowerB != 0 || wheelPowerC != 0 || wheelPowerD != 0) {
-    Serial.printf("debug:wheel_power A=%d B=%d C=%d D=%d\n", (int8_t)wheelPowerA, (int8_t)wheelPowerB, (int8_t)wheelPowerC, (int8_t)wheelPowerD);
-  } else {
-    Serial.println("debug:wheel_power STOP (0,0,0,0)");
-  }
-
   // Light setting, lights change according to car direction and speed
   if(Y>0){
     if (A == 0x01)

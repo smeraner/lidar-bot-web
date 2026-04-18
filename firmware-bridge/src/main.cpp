@@ -47,6 +47,20 @@ unsigned long lastHeartbeatTime = 0;
 const unsigned long HEARTBEAT_INTERVAL = 200;
 const unsigned long WEB_UI_TIMEOUT = 2000;
 
+// ──── Non-blocking Serial RX buffer ────
+#define SERIAL_RX_BUF_SIZE 256
+char serialRxBuffer[SERIAL_RX_BUF_SIZE];
+int serialRxIndex = 0;
+
+// ──── Deferred Lidar data (filled in ISR, formatted in loop) ────
+volatile bool lidarDataReady = false;
+uint8_t lidarRawBuffer[180];
+volatile int lidarPacketCount = 0;
+
+// ──── Deferred IMU data ────
+volatile bool imuDataReady = false;
+float imuPitch = 0, imuRoll = 0, imuYaw = 0;
+
 // ──── BLE Callbacks ────
 class BleServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer* pServer) override {
@@ -100,7 +114,6 @@ void processCommand(String input) {
 
   lastWebTrafficTime = millis();
 
-
   // LCD echo
   M5.Lcd.fillRect(0, 25, 160, 20, BLACK);
   M5.Lcd.setCursor(0, 25);
@@ -117,57 +130,64 @@ void processCommand(String input) {
       esp_now_send(broadcastMac, handshake, 7);
       delay(100);
     }
-    writeAllLn("debug:sent_pair_handshake_broadcast_6_times");
+    writeAllLn("debug:pair_sent");
   } else if (input == "status?") {
-    writeAll("status:");
-    writeAllLn(lastBotConnected ? "robot_connected" : "robot_disconnected");
+    writeAllLn(lastBotConnected ? "status:robot_connected" : "status:robot_disconnected");
   } else if (input == "ledshow") {
     uint8_t showData[4] = {0, 0, 0, 0};
     esp_now_send(lidarBotAddress, showData, 4);
-    writeAllLn("debug:sent_ledshow_payload_4_bytes");
   } else if (input.startsWith("ledcolor:")) {
     int r, g, b;
     if (sscanf(input.c_str(), "ledcolor:%d,%d,%d", &r, &g, &b) == 3) {
       uint8_t colorData[5] = {(uint8_t)r, (uint8_t)g, (uint8_t)b, 0, 0};
       esp_now_send(lidarBotAddress, colorData, 5);
-      writeAll("debug:sent_ledcolor_r");
-      writeAll(String(r));
-      writeAll("_g");
-      writeAll(String(g));
-      writeAll("_b");
-      writeAllLn(String(b));
     }
   } else {
     int x = 0, y = 0, z = 0, duration = 0;
     int parsedArgs = sscanf(input.c_str(), "%d,%d,%d,%d", &x, &y, &z, &duration);
 
     if (parsedArgs >= 3) {
-      x = constrain(x, -7, 7);
-      y = constrain(y, -7, 7);
+      // Robot V1 Mapping:
+      // X (data[0]) = Forward/Backward Translation in robot's wheel map
+      // Y (data[1]) = Rotation OR Side-Translation depending on A flag
+      // Actually, looking at LidarCar.cpp:
+      // X is rotation (Normal mode) or side-move (Lateral mode)
+      // Y is forward/back
+      // A (data[2]) is the flag: 0=Normal (Rotate), 1=Lateral (Strafe)
+
+      int8_t robotX = 0;
+      int8_t robotY = (int8_t)constrain(y, -7, 7);
+      int8_t robotA = 0;
+
+      if (z != 0) {
+        // Rotation takes priority or is mixed
+        robotX = (int8_t)constrain(z, -7, 7);
+        robotA = 0; // Normal mode
+      } else if (x != 0) {
+        // Strafe mode
+        robotX = (int8_t)constrain(x, -7, 7);
+        robotA = 1; // Lateral mode
+      }
 
       if (parsedArgs == 4 && duration > 0) {
-        writeAll("debug:bridge_move_timed_x"); writeAll(String(x));
-        writeAll("_y"); writeAll(String(y));
-        writeAll("_dur"); writeAllLn(String(duration));
-
+        // Timed movement (6-byte packet)
         uint8_t moveDataArray[6] = {0, 0, 0, 0, 0, 0};
-        moveDataArray[0] = (uint8_t)(int8_t)x;
-        moveDataArray[1] = (uint8_t)(int8_t)y;
-        moveDataArray[2] = (uint8_t)(z > 0 ? 1 : 0);
+        moveDataArray[0] = (uint8_t)robotX;
+        moveDataArray[1] = (uint8_t)robotY;
+        moveDataArray[2] = (uint8_t)robotA;
         moveDataArray[3] = (uint8_t)(duration >> 8);
         moveDataArray[4] = (uint8_t)(duration & 0xFF);
         esp_now_send(lidarBotAddress, moveDataArray, 6);
-        
+
+        // Reset heartbeat state for timed moves
         lastManualX = 0;
         lastManualY = 0;
         lastManualZ = 0;
       } else {
-        writeAll("debug:bridge_move_simple_x"); writeAll(String(x));
-        writeAll("_y"); writeAllLn(String(y));
-
-        lastManualX = (int8_t)x;
-        lastManualY = (int8_t)y;
-        lastManualZ = (int8_t)z;
+        // Continuous movement (3-byte packet)
+        lastManualX = robotX;
+        lastManualY = robotY;
+        lastManualZ = robotA;
 
         uint8_t moveDataArray[3];
         moveDataArray[0] = (uint8_t)lastManualX;
@@ -183,22 +203,16 @@ void processCommand(String input) {
 
 // ──── ESP-NOW Callbacks ────
 
+// Intentionally empty – verbose logging here was blocking loop() and
+// causing the bot's 500ms watchdog to fire ("start then stop" symptom).
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  String msg = "debug:sent_to:";
-  for (int i = 0; i < 6; i++) {
-    char hex[4];
-    snprintf(hex, sizeof(hex), "%02X", mac_addr[i]);
-    msg += hex;
-    if (i < 5) msg += ":";
-  }
-  msg += "_status:";
-  msg += (status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
-  writeAllLn(msg);
+  (void)mac_addr;
+  (void)status;
 }
 
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   lastRecvTime = millis();
-  
+
   // Save the bot's MAC address if it's new
   bool isNewMac = false;
   for (int i=0; i<6; i++) {
@@ -214,60 +228,29 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
       peerInfo.channel = 1;
       peerInfo.encrypt = false;
       esp_now_add_peer(&peerInfo);
-    } else {
-      writeAllLn("debug:ignored_new_mac_pairing_window_closed");
     }
   }
 
-  if (len == 6) {
-    writeAllLn("debug:received_6b_broadcast_mac_saved");
-  } 
-  else if (len == 4) {
+  if (len == 4) {
     lastBotConnected = true;
-    writeAllLn("debug:received_4b_confirmation_paired_successfully");
-  } 
+  }
   else if (len == 12) {
-    float pitch, roll, yaw;
-    memcpy(&pitch, incomingData, 4);
-    memcpy(&roll, incomingData + 4, 4);
-    memcpy(&yaw, incomingData + 8, 4);
-    
-    String imuMsg = "imu:";
-    imuMsg += String(pitch, 2);
-    imuMsg += ",";
-    imuMsg += String(roll, 2);
-    imuMsg += ",";
-    imuMsg += String(yaw, 2);
-    writeAllLn(imuMsg);
+    // Defer IMU formatting to loop() – just copy raw floats
+    memcpy(&imuPitch, incomingData, 4);
+    memcpy(&imuRoll, incomingData + 4, 4);
+    memcpy(&imuYaw, incomingData + 8, 4);
+    imuDataReady = true;
   }
   else if (len == 180) {
     packetCount++;
-    
-    // Throttle Lidar data reporting to prevent Serial/BLE congestion.
-    // At ~40 packets/sec (5Hz rotation), sending every 4th packet gives ~10Hz updates.
+
+    // Throttle: send every 4th packet (~10Hz)
     if (packetCount % 4 != 0) return;
 
-    String lidarMsg = "lidar:";
-    for (int i = 0; i < 45; i++) {
-      uint16_t angle = (incomingData[i*4] << 8) + incomingData[i*4+1];
-      uint16_t distance = (incomingData[i*4+2] << 8) + incomingData[i*4+3];
-      
-      lidarMsg += String(angle);
-      lidarMsg += ",";
-      lidarMsg += String(distance);
-      if (i < 44) lidarMsg += ",";
-    }
-    writeAllLn(lidarMsg);
-
-    // Show pulse on LCD and LED
-    if ((packetCount / 4) % 5 == 0) {
-        digitalWrite(10, LOW);
-        M5.Lcd.setCursor(0, 65);
-        M5.Lcd.fillRect(0, 65, 160, 15, BLACK);
-        M5.Lcd.printf("Lidar PKTs: %d", packetCount);
-    } else if ((packetCount / 4) % 5 == 2) {
-        digitalWrite(10, HIGH);
-    }
+    // Copy raw bytes for deferred formatting in loop()
+    memcpy(lidarRawBuffer, incomingData, 180);
+    lidarPacketCount = packetCount;
+    lidarDataReady = true;
   }
 }
 
@@ -283,7 +266,7 @@ void setup() {
   M5.Lcd.setTextColor(YELLOW);
   M5.Lcd.setCursor(0, 0);
   M5.Lcd.setTextSize(2);
-  M5.Lcd.println("Bridge v0.4");
+  M5.Lcd.println("Bridge v0.5");
   M5.Lcd.setTextSize(1);
   M5.Lcd.setTextColor(WHITE);
   M5.Lcd.println("USB + BLE Ready");
@@ -366,17 +349,16 @@ void loop() {
 
   // Robot connection check (heartbeat)
   bool botConnected = (millis() - lastRecvTime < 2000) && (lastRecvTime > 0);
-  
+
   if (botConnected != lastBotConnected) {
     lastBotConnected = botConnected;
-    writeAll("status:");
-    writeAllLn(botConnected ? "robot_connected" : "robot_disconnected");
-    
+    writeAllLn(botConnected ? "status:robot_connected" : "status:robot_disconnected");
+
     M5.Lcd.fillRect(0, 48, 160, 12, BLACK);
     M5.Lcd.setCursor(0, 50);
     M5.Lcd.setTextColor(botConnected ? GREEN : RED);
     M5.Lcd.printf("Bot: %s", botConnected ? "Connected" : "Disconnected");
-    
+
     if (!botConnected) {
         digitalWrite(10, HIGH);
     }
@@ -405,17 +387,25 @@ void loop() {
   if (M5.BtnA.wasPressed()) {
     uint8_t stopData[3] = {0, 0, 0};
     esp_now_send(lidarBotAddress, stopData, 3);
-    
+
     M5.Lcd.fillRect(0, 25, 160, 20, RED);
     M5.Lcd.setCursor(0, 25);
     M5.Lcd.setTextColor(WHITE);
     M5.Lcd.println("STOP (BtnA)");
   }
 
-  // ── Process USB Serial input ──
-  if (Serial.available() > 0) {
-    String input = Serial.readStringUntil('\n');
-    processCommand(input);
+  // ── Process USB Serial input (non-blocking, char-by-char) ──
+  while (Serial.available() > 0) {
+    char c = (char)Serial.read();
+    if (c == '\n' || c == '\r') {
+      if (serialRxIndex > 0) {
+        serialRxBuffer[serialRxIndex] = '\0';
+        processCommand(String(serialRxBuffer));
+        serialRxIndex = 0;
+      }
+    } else if (serialRxIndex < SERIAL_RX_BUF_SIZE - 1) {
+      serialRxBuffer[serialRxIndex++] = c;
+    }
   }
 
   // ── Process BLE input ──
@@ -447,6 +437,43 @@ void loop() {
       }
     }
   }
+
+  // ── Send deferred IMU data ──
+  if (imuDataReady) {
+    imuDataReady = false;
+    char imuBuf[64];
+    snprintf(imuBuf, sizeof(imuBuf), "imu:%.2f,%.2f,%.2f", imuPitch, imuRoll, imuYaw);
+    writeAllLn(String(imuBuf));
+  }
+
+  // ── Send deferred Lidar data ──
+  if (lidarDataReady) {
+    lidarDataReady = false;
+    int pktCount = lidarPacketCount;
+
+    // Build lidar string using snprintf (faster than String concatenation)
+    char lidarBuf[512];
+    int pos = 0;
+    pos += snprintf(lidarBuf + pos, sizeof(lidarBuf) - pos, "lidar:");
+    for (int i = 0; i < 45; i++) {
+      uint16_t angle = (lidarRawBuffer[i*4] << 8) + lidarRawBuffer[i*4+1];
+      uint16_t distance = (lidarRawBuffer[i*4+2] << 8) + lidarRawBuffer[i*4+3];
+      pos += snprintf(lidarBuf + pos, sizeof(lidarBuf) - pos,
+                      i < 44 ? "%u,%u," : "%u,%u", angle, distance);
+    }
+    writeAllLn(String(lidarBuf));
+
+    // Show pulse on LCD and LED
+    if ((pktCount / 4) % 5 == 0) {
+        digitalWrite(10, LOW);
+        M5.Lcd.setCursor(0, 65);
+        M5.Lcd.fillRect(0, 65, 160, 15, BLACK);
+        M5.Lcd.printf("Lidar PKTs: %d", pktCount);
+    } else if ((pktCount / 4) % 5 == 2) {
+        digitalWrite(10, HIGH);
+    }
+  }
+
   // ── Process Heartbeat (Repeat last manual command) ──
   if (millis() - lastHeartbeatTime > HEARTBEAT_INTERVAL) {
     lastHeartbeatTime = millis();
@@ -454,12 +481,11 @@ void loop() {
     // Check for Web UI timeout (safety)
     if (millis() - lastWebTrafficTime > WEB_UI_TIMEOUT && lastWebTrafficTime > 0) {
       if (lastManualX != 0 || lastManualY != 0 || lastManualZ != 0) {
-        writeAllLn("debug:web_ui_timeout_stalling_bot");
         lastManualX = 0; lastManualY = 0; lastManualZ = 0;
       }
     }
 
-    // Always send current manual state if robot is connected. 
+    // Always send current manual state if robot is connected.
     // This satisfies the bot's 500ms watchdog even if X/Y/Z are 0.
     if (botConnected) {
       uint8_t hbData[3] = { (uint8_t)lastManualX, (uint8_t)lastManualY, (uint8_t)lastManualZ };

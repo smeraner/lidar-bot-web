@@ -1,4 +1,5 @@
 import * as Blockly from 'blockly';
+import 'blockly/blocks';
 import { serialBridge } from './serial';
 import type { IBridgeTransport } from './serial';
 import { bluetoothBridge } from './bluetooth';
@@ -146,9 +147,6 @@ const handleLidarData = (rawPoints: { angle: number; distance: number }[]) => {
 
 const handleImuData = (pitch: number, roll: number, yaw: number) => {
   lidarStore.updateImu(pitch, roll, yaw);
-  if ((uiManager as any).updateIMUDisplay) {
-    (uiManager as any).updateIMUDisplay(pitch, roll, yaw);
-  }
 };
 
 const handleRobotStatus = (status: 'connected' | 'disconnected' | 'searching') => {

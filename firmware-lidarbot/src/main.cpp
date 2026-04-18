@@ -27,6 +27,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len);
 
 int flag = 0;
 unsigned long last_command_time = 0;
+bool watchdogFired = false;
 
 // Config: Skip n lidar scan transmission frames (0 = send all, 3 = skip 3)
 const int SCAN_SKIP_FRAMES = 3;
@@ -41,7 +42,7 @@ void setup() {
   M5.Lcd.fillScreen(TFT_BLACK);
   m5.lcd.pushImage(0, 0, 320, 240, (uint16_t *)gImage_logo);
   M5.Lcd.setCursor(240, 1, 4);    
-  M5.Lcd.printf("V 0.0.2");
+  M5.Lcd.printf("V 0.0.3");
   delay(2000);
   M5.Lcd.fillScreen(TFT_BLACK);
   
@@ -98,15 +99,23 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
   }
   
   last_command_time = millis();
+  watchdogFired = false;
 
  if((data_len == 3) && (!flag)) {
-    Serial.printf("debug:bot_move_3b x=%d y=%d z=%d\n", (int8_t)data[0], (int8_t)data[1], data[2]);
-    lidarcar.ControlWheel(data[0], data[1], data[2], 0);
+    int8_t x = (int8_t)data[0];
+    int8_t y = (int8_t)data[1];
+    int8_t z = (int8_t)data[2];
+
+    // If a timed movement is active and this is a zero/heartbeat packet,
+    // just refresh the watchdog but don't override the motors.
+    if (x == 0 && y == 0 && z == 0 && lidarcar.isTimedMoveActive()) {
+      return;
+    }
+    lidarcar.ControlWheel(x, y, z, 0);
  }
 
  if((data_len == 6) && (!flag)) {
     uint16_t duration = (data[3] << 8) | data[4];
-    Serial.printf("debug:bot_move_6b x=%d y=%d z=%d dur=%d\n", (int8_t)data[0], (int8_t)data[1], data[2], duration);
     lidarcar.ControlWheel(data[0], data[1], data[2], duration);
  }
 
@@ -128,8 +137,12 @@ void loop()
   //lidarcar.ControlMode();
 
   // Watchdog to stop car if connection lost for 500ms in Remote mode (flag == 0)
+  // Only fire once per disconnect to avoid spamming ControlWheel(0,0,0,0)
   if (flag == 0 && millis() - last_command_time > 500) {
-    lidarcar.ControlWheel(0, 0, 0, 0);
+    if (!watchdogFired) {
+      lidarcar.ControlWheel(0, 0, 0, 0);
+      watchdogFired = true;
+    }
   }
   
   if(digitalRead(37) == LOW){

@@ -25,6 +25,7 @@ class LidarCar {
    void LedShow(void);
    void SetColor(byte r, byte g, byte b);
    void Update(void);
+   bool isTimedMoveActive(void) { return _stopTime > 0 && millis() <= _stopTime; }
  public:
    uint8_t mapdata[180];
    uint16_t distance[360];
