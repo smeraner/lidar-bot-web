@@ -235,6 +235,10 @@ header h1 {
   animation: fadeInDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.dropdown.active .dropdown-content.right-align {
+  animation: fadeInDownRight 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @keyframes fadeInDown {
   from {
     opacity: 0;
@@ -243,6 +247,17 @@ header h1 {
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes fadeInDownRight {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

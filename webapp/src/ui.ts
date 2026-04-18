@@ -273,7 +273,18 @@ export class UIManager {
     const addObstacleMenuBtn = document.getElementById('addObstacleMenuBtn');
     addObstacleMenuBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      addObstacleMenuBtn.parentElement?.classList.toggle('active');
+      const parent = addObstacleMenuBtn.parentElement;
+      const menu = parent?.querySelector('.dropdown-content') as HTMLElement;
+      if (parent && menu) {
+        const isActive = parent.classList.toggle('active');
+        if (isActive) {
+          const rect = addObstacleMenuBtn.getBoundingClientRect();
+          menu.style.position = 'fixed';
+          menu.style.top = `${rect.bottom + 8}px`;
+          menu.style.left = 'auto';
+          menu.style.right = `${window.innerWidth - rect.right}px`;
+        }
+      }
     });
     window.addEventListener('click', () => {
       addObstacleMenuBtn?.parentElement?.classList.remove('active');
