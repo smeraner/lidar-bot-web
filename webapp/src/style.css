@@ -825,6 +825,25 @@ main {
   border-left: 4px solid var(--accent);
 }
 
+.toast-action-btn {
+  margin-left: auto;
+  padding: 6px 12px;
+  background: var(--accent);
+  color: #0f172a;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.toast-action-btn:hover {
+  background: white;
+  transform: translateY(-1px);
+}
+
 /* Sidebar Resizing */
 .resizer {
   width: 4px;

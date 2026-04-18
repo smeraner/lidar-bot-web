@@ -12,6 +12,7 @@ export class Toast {
     message: string,
     type: 'info' | 'success' | 'warning' | 'error' = 'info',
     duration = 3000,
+    action?: { label: string; callback: () => void },
   ) {
     this.init();
     const toast = document.createElement('div');
@@ -30,18 +31,32 @@ export class Toast {
 
     toast.appendChild(icon);
     toast.appendChild(text);
+
+    if (action) {
+      const btn = document.createElement('button');
+      btn.className = 'toast-action-btn';
+      btn.textContent = action.label;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        action.callback();
+      };
+      toast.appendChild(btn);
+    }
+
     this.container?.appendChild(toast);
 
     // Trigger reflow for animation
     void toast.offsetHeight;
     toast.classList.add('visible');
 
-    setTimeout(() => {
-      toast.classList.remove('visible');
+    if (duration > 0) {
       setTimeout(() => {
-        toast.remove();
-      }, 300);
-    }, duration);
+        toast.classList.remove('visible');
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      }, duration);
+    }
   }
 
   static success(msg: string) {

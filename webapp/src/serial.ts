@@ -109,8 +109,9 @@ export class SerialBridge implements IBridgeTransport {
         const rawAngle = parseInt(data[i]);
         const distance = parseInt(data[i + 1]);
         if (!isNaN(rawAngle) && !isNaN(distance)) {
-          // Adjust 90 degrees so physical front (270) aligns with UI Front (0)
-          const angle = (rawAngle + 90) % 360;
+          // Adjust 90+7.45 degrees so physical front (270) aligns with UI Front (0)
+          // including the +0.13 rad (+7.45 deg) offset used in LidarCar.cpp
+          const angle = (rawAngle + 97.45) % 360;
           points.push({ angle, distance });
         }
       }

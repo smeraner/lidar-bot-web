@@ -4,7 +4,8 @@ export class LidarStore {
 
   update(points: { angle: number; distance: number }[]) {
     for (const pt of points) {
-      this.distances[pt.angle % 360] = pt.distance;
+      const idx = Math.round(pt.angle) % 360;
+      this.distances[idx] = pt.distance;
     }
   }
 
@@ -17,7 +18,7 @@ export class LidarStore {
   }
 
   getDistance(angle: number): number {
-    return this.distances[Math.floor(angle) % 360];
+    return this.distances[Math.round(angle) % 360];
   }
 
   isObstacle(angleStart: number, angleEnd: number, threshold: number): boolean {

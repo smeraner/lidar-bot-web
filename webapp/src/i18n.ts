@@ -55,6 +55,9 @@ export const translations = {
     lidar: 'Lidar',
     reset: 'Reset',
     install_app: 'Install App',
+    update_available: 'New version available!',
+    refresh: 'Refresh',
+    offline_ready: 'App ready to work offline',
   },
   de: {
     title: 'LidarBot Steuerung',
@@ -110,6 +113,9 @@ export const translations = {
     lidar: 'Lidar',
     reset: 'Zurücksetzen',
     install_app: 'App Installieren',
+    update_available: 'Neue Version verfügbar!',
+    refresh: 'Aktualisieren',
+    offline_ready: 'App ist bereit für Offline-Nutzung',
   },
 };
 

@@ -1,15 +1,25 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SerialBridge } from './serial';
 
 describe('SerialBridge', () => {
   let bridge: SerialBridge;
 
   beforeEach(() => {
-    bridge = new SerialBridge();
     // Mock the global navigator if not present
     if (typeof globalThis !== 'undefined' && !(globalThis as any).navigator) {
-      (globalThis as any).navigator = {};
+      (globalThis as any).navigator = {
+        serial: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        },
+      };
+    } else if (globalThis.navigator && !(globalThis.navigator as any).serial) {
+      (globalThis.navigator as any).serial = {
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      };
     }
+    bridge = new SerialBridge();
   });
 
   it('should initialize disconnected', () => {
@@ -21,8 +31,8 @@ describe('SerialBridge', () => {
     return new Promise<void>((resolve) => {
       bridge.onLidarData((points) => {
         expect(points.length).toBe(2);
-        expect(points[0]).toEqual({ angle: 180, distance: 100 });
-        expect(points[1]).toEqual({ angle: 270, distance: 200 });
+        expect(points[0]).toEqual({ angle: 187.45, distance: 100 });
+        expect(points[1]).toEqual({ angle: 277.45, distance: 200 });
         resolve();
       });
 

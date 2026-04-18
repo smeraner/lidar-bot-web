@@ -74,7 +74,7 @@ The LidarBot continuously broadcasts its scan data once paired.
 
 | Payload Size | Data Structure |
 | :--- | :--- |
-| **180 Bytes** | **45 Scan Points**. Each point is **4 bytes**: <br> - Byte 0-1: Angle (`uint16_t`, Little Endian) <br> - Byte 2-3: Distance (`uint16_t`, Little Endian, in mm) |
+| **180 Bytes** | **45 Scan Points**. Each point is **4 bytes**: <br> - Byte 0-1: Angle (`uint16_t`, Big Endian) <br> - Byte 2-3: Distance (`uint16_t`, Big Endian, in mm) |
 
 -----
 
@@ -86,13 +86,14 @@ The `SerialBridge` class in `webapp/src/serial.ts` uses a line-based buffer to p
 
 ### LidarStore
 
-The `LidarStore` (`webapp/src/lidarStore.ts`) maintains an array of 360 distances, updating indices based on the received angles mapped from the Little Endian `uint16_t` values.
+The `LidarStore` (`webapp/src/lidarStore.ts`) maintains an array of 360 distances, updating indices based on the received angles mapped from the Big Endian `uint16_t` values and adjusted by 97.45° to align front and account for hardware offset.
 
 -----
 
 ## ⚠️ Important Implementation Notes
 
-  - **Endianness**: ESP-NOW Lidar data is sent in **Little Endian**. The ESP32 Bridge parses this using bitwise shifts (e.g., `incomingData[i*4] | (incomingData[i*4+1] << 8)`).
+  - **Endianness**: ESP-NOW Lidar data is sent in **Big Endian**. The ESP32 Bridge parses this by combining bytes: `(high << 8) + low`.
+  - **Chassis Offset**: The LidarBot hardware uses a **0.13 rad (approx 7.45°)** CCW offset to compensate for physical sensor alignment. The Web UI applies this offset during parsing in `serial.ts`.
   - **Broadcast MAC**: The bridge currently relies *entirely* on `{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}` as the destination MAC. This means any V1 LidarBot on Channel 1 will respond to the commands.
   - **Emergency Stop**: Pressing `BtnA` on the M5StickC Bridge immediately broadcasts a 3-byte payload of `0, 0, 0` to halt the bot, overriding any buffered web commands.
   - **Buffer Safety**: The web frontend (or Blockly generator) must add a delay after movement commands to ensure the Serial buffer is not overwhelmed and the LidarBot's kinematic loop has time to execute the instruction.

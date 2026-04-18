@@ -11,6 +11,7 @@ import { UIManager } from './ui';
 import { runProgram, emergencyStop, worker, isRunning } from './execution';
 import { Toast } from './toast';
 import './style.css';
+import { registerSW } from 'virtual:pwa-register';
 
 defineBlocks();
 defineGenerators();
@@ -224,3 +225,24 @@ if (installBtn) {
     installBtn.style.display = 'none';
   });
 }
+
+// PWA Update handling
+const updateSW = registerSW({
+  onNeedRefresh() {
+    Toast.show(t('update_available') || 'New version available!', 'info', 0, {
+      label: t('refresh') || 'Refresh',
+      callback: () => updateSW(true),
+    });
+  },
+  onOfflineReady() {
+    Toast.success(t('offline_ready') || 'App ready to work offline');
+  },
+});
+
+// Periodic update check (every hour)
+setInterval(
+  () => {
+    updateSW();
+  },
+  60 * 60 * 1000,
+);

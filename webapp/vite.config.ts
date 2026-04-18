@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     basicSsl(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
@@ -43,7 +43,24 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,json}'],
-        maximumFileSizeToCacheInBytes: 5000000
+        maximumFileSizeToCacheInBytes: 5000000,
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+              },
+              networkTimeoutSeconds: 3
+            }
+          }
+        ]
       }
     })
   ]
