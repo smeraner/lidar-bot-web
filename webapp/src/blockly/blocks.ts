@@ -1,8 +1,21 @@
 import * as Blockly from 'blockly';
 import { FieldColour } from '@blockly/field-colour';
+import { registerFieldAngle, FieldAngle } from '@blockly/field-angle';
 import { t } from '../i18n';
 
 export function defineBlocks() {
+  registerFieldAngle();
+
+  Blockly.Blocks['math_angle'] = {
+    init: function () {
+      this.appendDummyInput().appendField(new FieldAngle('0'), 'NUM');
+      this.setOutput(true, 'Number');
+      this.setColour(230);
+      this.setTooltip('');
+      this.setHelpUrl('');
+    },
+  };
+
   Blockly.Blocks['lidarbot_move'] = {
     init: function () {
       this.appendDummyInput()

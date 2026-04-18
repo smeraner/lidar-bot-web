@@ -95,4 +95,9 @@ export function defineGenerators() {
     const threshold = javascriptGenerator.valueToCode(block, 'THRESHOLD', Order.ATOMIC) || '200';
     return [`lidarStore.isObstacle(${start}, ${end}, ${threshold})`, Order.ATOMIC];
   };
+
+  javascriptGenerator.forBlock['math_angle'] = function (block: any) {
+    const angle = block.getFieldValue('NUM') || '0';
+    return [angle, Order.ATOMIC];
+  };
 }
