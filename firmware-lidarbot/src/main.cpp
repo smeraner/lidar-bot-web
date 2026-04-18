@@ -28,6 +28,10 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len);
 int flag = 0;
 unsigned long last_command_time = 0;
 
+// Config: Skip n lidar scan transmission frames (0 = send all, 3 = skip 3)
+const int SCAN_SKIP_FRAMES = 3;
+int scan_skip_counter = 0;
+
 void setup() {
   m5.begin();
   Serial1.begin(230400, SERIAL_8N1, 16, 2);  //Lidar
@@ -40,6 +44,14 @@ void setup() {
   M5.Lcd.printf("V 0.0.2");
   delay(2000);
   M5.Lcd.fillScreen(TFT_BLACK);
+  
+  //!Hardware detect
+  Serial.printf("debug:HW_DETECT PSRAM_Size=%u\n", ESP.getPsramSize());
+  if (M5.IMU.Init() == 0) {
+    Serial.println("debug:HW_DETECT IMU=Found");
+  } else {
+    Serial.println("debug:HW_DETECT IMU=None");
+  }
   
   //!esp
   espnow.BotInit();
@@ -125,13 +137,27 @@ void loop()
    if(flag >= 4) flag = 0;
    while(digitalRead(37) == LOW);
   }
+
+  scan_skip_counter++;
+  bool should_send_scan = false;
+  if (scan_skip_counter > SCAN_SKIP_FRAMES) {
+    should_send_scan = true;
+    scan_skip_counter = 0;
+  }
   
   if(flag == 0){ 
     i2c.master_hangs();
     //esp_now_send(espnow.peer_addr, lidarcar.mapdata, 180);
-    esp_err_t addStatus = esp_now_send(espnow.peer_addr, lidarcar.mapdata, 180);
-    if(addStatus != ESP_OK){
-      //lidarcar.ControlWheel(0, 0, 0);
+    if (should_send_scan) {
+      float pitch = 0.0F, roll = 0.0F, yaw = 0.0F;
+      M5.IMU.getAhrsData(&pitch, &roll, &yaw);
+      float imuData[3] = {pitch, roll, yaw};
+      esp_now_send(espnow.peer_addr, (uint8_t*)imuData, 12);
+      
+      esp_err_t addStatus = esp_now_send(espnow.peer_addr, lidarcar.mapdata, 180);
+      if(addStatus != ESP_OK){
+        //lidarcar.ControlWheel(0, 0, 0);
+      }
     }
     M5.Lcd.setCursor(240, 0);    
     M5.Lcd.printf("Remote");
@@ -139,7 +165,9 @@ void loop()
   
   if(flag == 1) {
     i2c.master_hangs();
-    esp_now_send(espnow.peer_addr, lidarcar.mapdata, 180);
+    if (should_send_scan) {
+      esp_now_send(espnow.peer_addr, lidarcar.mapdata, 180);
+    }
     lidarcar.CarMaze();
     M5.Lcd.setCursor(240, 0);    
     M5.Lcd.printf("Maze  ");

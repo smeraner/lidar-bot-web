@@ -9,7 +9,7 @@ This skill explains how the different parts of the LidarBotWeb project interact,
 
 ## 🌉 Communication Chain
 1. **Web App (Vite/TS/Blockly)**: Generates JavaScript code from visual blocks.
-2. **Web Serial (SerialBridge)**: Sends ASCII strings (e.g., `"x,y,z\n"`) to the ESP32.
+2. **Web Serial (SerialBridge)**: Sends ASCII strings (e.g., `"x,y,z\n"`) to the ESP32 via USB.
 3. **ESP32 Bridge**: Parses the Serial string, updates the `struct_message` payload.
 4. **ESP-NOW**: Direct wireless broadcast from ESP32 to LidarBot.
 5. **M5 LidarBot**: Processes receipt of the `struct_message` and controls the motors.
@@ -47,7 +47,7 @@ const code = `
 This approach prevents flooding the serial buffer and allows timed movements.
 
 ## 🧱 Protocol Specifications
-For a deep dive into the byte-level structure and serial commands, refer to the [**ProtocolExpert skill**](file:///d:/Projekte/LidarBotWeb/.agent/skills/ProtocolExpert/SKILL.md).
+For a deep dive into the byte-level structure and serial commands, refer to the **ProtocolExpert skill** (`.agents/skills/ProtocolExpert/SKILL.md`).
 
 ## 🧪 Testing and Verification
-For end-to-end testing of this architecture, refer to the [**web-testing workflow**](file:///d:/Projekte/LidarBotWeb/.agent/workflows/web-testing.md).
+For end-to-end testing of this architecture, refer to the **web-testing workflow** (`.agents/workflows/web-testing.md`).

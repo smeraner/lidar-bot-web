@@ -29,16 +29,16 @@ This skill provides guidelines and audits for maintaining and improving the Lida
 - **Documentation**: Keep `readme.md` updated with any protocol changes.
 
 ## 🧪 Testing & Automation Workflows
-Before concluding any feature implementation, ensure you utilize the following automated pipelines and scripts:
+Before concluding any feature implementation, ensure you utilize the following automated pipelines and scripts at the project root:
 
-- **Web Tests:** Run `npm run test` in the `webapp` directory (powered by Vitest).
+- **Web Tests:** Run `npm run test` (powered by Vitest).
 - **Web Linting:** Run `npm run lint` and `npm run format` (powered by ESLint + Prettier).
-- **Firmware Checks:** Run `npm run lint-firmware` at the project root to run Cppcheck via PlatformIO.
+- **Firmware Checks:** Run `npm run lint-firmware` to run Cppcheck via PlatformIO.
 - **Pre-commit:** Note that `husky` and `lint-staged` are active and will run formatting and testing automatically on commit.
 
-Refer to the following workflows in `.agent/workflows/` for manual testing:
-- **[/web-testing](file:///d:/Projekte/LidarBotWeb/.agent/workflows/web-testing.md)**: Steps for validating the Web Serial connection, Blockly workspace, and code generation.
-- **[/firmware-upload](file:///d:/Projekte/LidarBotWeb/.agent/workflows/firmware-upload.md)**: Steps for building, flashing, and verifying the ESP32 bridge firmware.
+Refer to the following workflows in `.agents/workflows/` for manual testing:
+- **web-testing** (`.agents/workflows/web-testing.md`): Steps for validating the Web Serial connection, Blockly workspace, and code generation.
+- **firmware-upload** (`.agents/workflows/firmware-upload.md`): Steps for building, flashing, and verifying the ESP32 bridge firmware.
 
 ## 🔍 Pre-Submission Checklist
 - [ ] Do automated tests pass (`npm run test`)?
@@ -47,4 +47,4 @@ Refer to the following workflows in `.agent/workflows/` for manual testing:
 - [ ] Does the `webapp` handle serial disconnection gracefully?
 - [ ] Is the Blockly toolbox categorized for easy navigation?
 - [ ] Is the `struct_message` identical in both `firmware` and `webapp` generators?
-- [ ] Has the `/web-testing` workflow been completed successfully?
+- [ ] Has the web-testing workflow been completed successfully?

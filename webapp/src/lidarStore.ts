@@ -1,10 +1,19 @@
 export class LidarStore {
   private distances: number[] = new Array(360).fill(0);
+  private imu: { pitch: number; roll: number; yaw: number } = { pitch: 0, roll: 0, yaw: 0 };
 
   update(points: { angle: number; distance: number }[]) {
     for (const pt of points) {
       this.distances[pt.angle % 360] = pt.distance;
     }
+  }
+
+  updateImu(pitch: number, roll: number, yaw: number) {
+    this.imu = { pitch, roll, yaw };
+  }
+
+  getImu() {
+    return this.imu;
   }
 
   getDistance(angle: number): number {

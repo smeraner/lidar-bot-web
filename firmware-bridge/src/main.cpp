@@ -226,6 +226,20 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     lastBotConnected = true;
     writeAllLn("debug:received_4b_confirmation_paired_successfully");
   } 
+  else if (len == 12) {
+    float pitch, roll, yaw;
+    memcpy(&pitch, incomingData, 4);
+    memcpy(&roll, incomingData + 4, 4);
+    memcpy(&yaw, incomingData + 8, 4);
+    
+    String imuMsg = "imu:";
+    imuMsg += String(pitch, 2);
+    imuMsg += ",";
+    imuMsg += String(roll, 2);
+    imuMsg += ",";
+    imuMsg += String(yaw, 2);
+    writeAllLn(imuMsg);
+  }
   else if (len == 180) {
     packetCount++;
     

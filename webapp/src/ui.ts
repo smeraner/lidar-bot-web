@@ -118,6 +118,21 @@ export class UIManager {
     }
   }
 
+  public updateIMUDisplay(pitch: number, roll: number, yaw: number) {
+    const imuStatus = document.getElementById('imuStatus');
+    if (imuStatus) {
+      if (imuStatus.style.display === 'none') {
+        imuStatus.style.display = 'flex';
+      }
+      const pitchEl = document.getElementById('imuPitch');
+      const rollEl = document.getElementById('imuRoll');
+      const yawEl = document.getElementById('imuYaw');
+      if (pitchEl) pitchEl.textContent = pitch.toFixed(1);
+      if (rollEl) rollEl.textContent = roll.toFixed(1);
+      if (yawEl) yawEl.textContent = yaw.toFixed(1);
+    }
+  }
+
   public initListeners() {
     const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
     if (languageSelect) {

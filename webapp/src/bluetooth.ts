@@ -13,6 +13,7 @@ export class BluetoothBridge {
   private _isConnected: boolean = false;
   private _robotStatus: 'connected' | 'disconnected' | 'searching' = 'disconnected';
   private lidarCallback: ((points: { angle: number; distance: number }[]) => void) | null = null;
+  private imuCallback: ((pitch: number, roll: number, yaw: number) => void) | null = null;
   private robotStatusCallback:
     | ((status: 'connected' | 'disconnected' | 'searching') => void)
     | null = null;
@@ -104,6 +105,17 @@ export class BluetoothBridge {
         this._robotStatus = 'connected';
         if (this.robotStatusCallback) this.robotStatusCallback('connected');
       }
+    } else if (line.startsWith('imu:')) {
+      const dataStr = line.substring(4);
+      const data = dataStr.split(',');
+      if (data.length === 3 && this.imuCallback) {
+        const pitch = parseFloat(data[0]);
+        const roll = parseFloat(data[1]);
+        const yaw = parseFloat(data[2]);
+        if (!isNaN(pitch) && !isNaN(roll) && !isNaN(yaw)) {
+          this.imuCallback(pitch, roll, yaw);
+        }
+      }
     } else if (line.startsWith('status:')) {
       const statusMatch = line.match(
         /^status:(robot_connected|robot_disconnected|robot_searching)$/,
@@ -128,6 +140,10 @@ export class BluetoothBridge {
 
   onLidarData(callback: (points: { angle: number; distance: number }[]) => void) {
     this.lidarCallback = callback;
+  }
+
+  onImuData(callback: (pitch: number, roll: number, yaw: number) => void) {
+    this.imuCallback = callback;
   }
 
   onRobotStatus(callback: (status: 'connected' | 'disconnected' | 'searching') => void) {

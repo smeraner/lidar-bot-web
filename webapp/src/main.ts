@@ -144,6 +144,13 @@ const handleLidarData = (rawPoints: { angle: number; distance: number }[]) => {
   }
 };
 
+const handleImuData = (pitch: number, roll: number, yaw: number) => {
+  lidarStore.updateImu(pitch, roll, yaw);
+  if ((uiManager as any).updateIMUDisplay) {
+    (uiManager as any).updateIMUDisplay(pitch, roll, yaw);
+  }
+};
+
 const handleRobotStatus = (status: 'connected' | 'disconnected' | 'searching') => {
   if (status === 'connected') {
     Toast.success(t('robot_connected'));
@@ -158,6 +165,8 @@ const handleRobotStatus = (status: 'connected' | 'disconnected' | 'searching') =
 
 serialBridge.onLidarData(handleLidarData);
 bluetoothBridge.onLidarData(handleLidarData);
+serialBridge.onImuData(handleImuData);
+bluetoothBridge.onImuData(handleImuData);
 serialBridge.onRobotStatus(handleRobotStatus);
 bluetoothBridge.onRobotStatus(handleRobotStatus);
 
