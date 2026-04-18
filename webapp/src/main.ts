@@ -68,7 +68,30 @@ const getToolbox = () => `
 
 const workspace = Blockly.inject('blocklyDiv', {
   toolbox: getToolbox(),
+  move: {
+    scrollbars: {
+      horizontal: true,
+      vertical: true,
+    },
+    drag: true,
+    wheel: true,
+  },
+  zoom: {
+    controls: true,
+    wheel: true,
+    startScale: 1.0,
+    maxScale: 3,
+    minScale: 0.3,
+    scaleSpeed: 1.2,
+    pinch: true,
+  },
+  trashcan: true,
 });
+
+// Ensure Blockly handles its initial size correctly
+setTimeout(() => {
+  Blockly.svgResize(workspace);
+}, 100);
 
 const savedState = localStorage.getItem('blocklyWorkspace');
 if (savedState) {
