@@ -68,7 +68,7 @@ header h1 {
 .status-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 13px;
   font-weight: 600;
   color: #64748b;
@@ -100,13 +100,13 @@ header h1 {
   transition: all 0.3s ease;
 }
 
-.status-item.connected .status-dot {
+.status-dot.connected {
   background: #10b981;
   box-shadow: 0 0 8px #10b981;
   animation: pulse 2s infinite;
 }
 
-.status-item.searching .status-dot {
+.status-dot.searching {
   background: #f59e0b;
   box-shadow: 0 0 8px #f59e0b;
   animation: pulse-orange 1.5s infinite;
@@ -765,11 +765,11 @@ main {
 /* Toast Notifications */
 #toast-container {
   position: fixed;
-  top: 24px;
+  bottom: 24px;
   right: 24px;
   z-index: 9999;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 12px;
   pointer-events: none;
 }

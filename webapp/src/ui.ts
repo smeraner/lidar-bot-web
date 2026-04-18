@@ -85,10 +85,16 @@ export class UIManager {
 
     const robotStatus = document.getElementById('robotStatus');
     const robotStatusText = document.getElementById('robotStatusText');
+    const robotStatusDot = document.getElementById('robotStatusDot');
     if (robotStatus) {
       const status = activeBridge.robotStatus;
       robotStatus.classList.remove('connected', 'searching', 'disconnected');
       robotStatus.classList.add(status);
+
+      if (robotStatusDot) {
+        robotStatusDot.classList.remove('connected', 'searching', 'disconnected');
+        robotStatusDot.classList.add(status);
+      }
 
       if (robotStatusText) {
         const statusLabel =
@@ -111,10 +117,17 @@ export class UIManager {
     }
 
     if (!isRunning) {
-      const runLiveBtn = document.getElementById('runLiveBtn') as HTMLButtonElement;
-      if (runLiveBtn) runLiveBtn.disabled = activeBridge.robotStatus !== 'connected';
-      const runSimBtn = document.getElementById('runSimBtn') as HTMLButtonElement;
-      if (runSimBtn) runSimBtn.disabled = false;
+      const runBtn = document.getElementById('runBtn') as HTMLButtonElement;
+      if (runBtn) {
+        const isRobotConnected = activeBridge.robotStatus === 'connected';
+        const key = isRobotConnected ? 'run_live' : 'run_sim';
+        const newText = t(key);
+        if (runBtn.textContent !== newText) {
+          runBtn.textContent = newText;
+          runBtn.setAttribute('data-i18n', key);
+        }
+        runBtn.disabled = false;
+      }
     }
   }
 

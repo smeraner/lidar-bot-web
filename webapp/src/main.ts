@@ -181,11 +181,9 @@ window.addEventListener('virtual_lidar_data', ((e: CustomEvent) => {
 uiManager.initListeners();
 uiManager.updateUI();
 
-document.getElementById('runLiveBtn')?.addEventListener('click', () => {
-  runProgram(true, workspace, activeBridge, uiManager.simulationView, () => uiManager.updateUI());
-});
-document.getElementById('runSimBtn')?.addEventListener('click', () => {
-  runProgram(false, workspace, activeBridge, uiManager.simulationView, () => uiManager.updateUI());
+document.getElementById('runBtn')?.addEventListener('click', () => {
+  const isLive = activeBridge.robotStatus === 'connected';
+  runProgram(isLive, workspace, activeBridge, uiManager.simulationView, () => uiManager.updateUI());
 });
 document
   .getElementById('eStopBtn')

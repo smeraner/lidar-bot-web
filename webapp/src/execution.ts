@@ -45,11 +45,9 @@ export function startExecution(workspace: Blockly.WorkspaceSvg, isLive: boolean)
     }
   }, 100);
 
-  const runLiveBtn = document.getElementById('runLiveBtn') as HTMLButtonElement;
-  const runSimBtn = document.getElementById('runSimBtn') as HTMLButtonElement;
+  const runBtn = document.getElementById('runBtn') as HTMLButtonElement;
   const stopBtn = document.getElementById('stopBtn');
-  if (runLiveBtn) runLiveBtn.disabled = true;
-  if (runSimBtn) runSimBtn.disabled = true;
+  if (runBtn) runBtn.disabled = true;
   if (stopBtn) stopBtn.style.display = 'inline-flex';
 
   setTimeout(() => Blockly.svgResize(workspace), 400);

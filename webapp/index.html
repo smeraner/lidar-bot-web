@@ -12,12 +12,9 @@
       <header>
         <h1 data-i18n="title">LidarBot Control</h1>
         <div class="status-container">
-          <div id="bridgeStatus" class="status-item">
-            <span class="status-dot"></span>
-            <span data-i18n="bridge">Bridge</span>
-          </div>
           <div id="robotStatus" class="status-item">
-            <span class="status-dot"></span>
+            <span id="bridgeStatus" class="status-dot" title="Bridge connection status"></span>
+            <span id="robotStatusDot" class="status-dot" title="Robot connection status"></span>
             <span id="robotStatusText" data-i18n="robot">Robot</span>
           </div>
           <div id="imuStatus" class="status-item" style="font-family: monospace; font-size: 0.8em; margin-left: 10px; color: #ccc; display: none;">
@@ -38,7 +35,7 @@
             </div>
           </div>
           <button id="pairBtn" class="premium-btn" data-i18n="pair" style="display: none;">Pair Robot</button>
-          <button id="runLiveBtn" class="premium-btn primary" data-i18n="run_live" disabled>Run Live</button>
+          <button id="runBtn" class="premium-btn primary" data-i18n="run_sim">Run Simulation</button>
           <button id="stopBtn" class="premium-btn danger" style="display: none;" data-i18n="stop_program">Stop</button>
           <button id="eStopBtn" class="premium-btn danger-estop" title="Emergency Stop (Esc)">🚨 E-STOP</button>
         </div>
@@ -76,7 +73,6 @@
                       <button id="addRectBtn" class="dropdown-item">⬛ Rectangle (Wall)</button>
                     </div>
                   </div>
-                  <button id="runSimBtn" class="premium-btn sm" data-i18n="run_sim">Run Simulation</button>
                   <button id="resetSimBtn" class="text-btn" data-i18n="reset">Reset</button>
                 </div>
               </div>
