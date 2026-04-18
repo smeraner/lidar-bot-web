@@ -150,7 +150,7 @@ export class SimulationView {
   }
 
   setLidarData(distances: number[]) {
-    this.lidarDistances = [...distances];
+    this.lidarDistances = distances;
     this.scheduleDraw();
   }
 
@@ -619,8 +619,10 @@ export class SimulationView {
       h - 12,
     );
 
-    // Re-schedule draw to keep Lidar eye spinning
-    this.scheduleDraw();
+    // Re-schedule draw if bot is moving or bump effect is active to ensure smooth animation
+    if (this.bumpEffect > 0 || (this.isProcessingQueue && this.commandQueue.length > 0)) {
+      this.scheduleDraw();
+    }
   }
 
   private drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {

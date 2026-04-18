@@ -88,23 +88,26 @@ class BleRxCallbacks : public BLECharacteristicCallbacks {
 
 // ──── Helpers ────
 
-// Send a string to all outputs (USB Serial + BLE TX if connected)
-void writeAll(const String &msg) {
-  Serial.print(msg);
+// Send raw bytes to all outputs
+void writeRaw(const uint8_t* data, size_t len) {
+  Serial.write(data, len);
   if (bleClientConnected && pTxCharacteristic) {
-    // BLE notifications must be chunked to fit within MTU
-    int len = msg.length();
-    for (int i = 0; i < len; i += BLE_CHUNK_SIZE) {
-      int chunkLen = min(BLE_CHUNK_SIZE, len - i);
-      pTxCharacteristic->setValue((uint8_t*)msg.c_str() + i, chunkLen);
+    for (size_t i = 0; i < len; i += BLE_CHUNK_SIZE) {
+      size_t chunkLen = min((size_t)BLE_CHUNK_SIZE, len - i);
+      pTxCharacteristic->setValue((uint8_t*)data + i, chunkLen);
       pTxCharacteristic->notify();
-      if (chunkLen == BLE_CHUNK_SIZE) delay(5); // small delay between chunks
+      if (chunkLen == BLE_CHUNK_SIZE) delay(5);
     }
   }
 }
 
-void writeAllLn(const String &msg) {
-  writeAll(msg + "\n");
+void writeAll(const char* msg) {
+  writeRaw((const uint8_t*)msg, strlen(msg));
+}
+
+void writeAllLn(const char* msg) {
+  writeAll(msg);
+  writeAll("\n");
 }
 
 // Process a single command string (shared between USB Serial and BLE inputs)
@@ -319,7 +322,7 @@ void setup() {
   WiFi.disconnect();
   
   writeAll("debug:bridge_mac:");
-  writeAllLn(WiFi.macAddress());
+  writeAllLn(WiFi.macAddress().c_str());
 
   if (esp_now_init() != ESP_OK) {
     M5.Lcd.setTextColor(RED);
@@ -443,7 +446,7 @@ void loop() {
     imuDataReady = false;
     char imuBuf[64];
     snprintf(imuBuf, sizeof(imuBuf), "imu:%.2f,%.2f,%.2f", imuPitch, imuRoll, imuYaw);
-    writeAllLn(String(imuBuf));
+    writeAllLn(imuBuf);
   }
 
   // ── Send deferred Lidar data ──
@@ -461,7 +464,7 @@ void loop() {
       pos += snprintf(lidarBuf + pos, sizeof(lidarBuf) - pos,
                       i < 44 ? "%u,%u," : "%u,%u", angle, distance);
     }
-    writeAllLn(String(lidarBuf));
+    writeAllLn(lidarBuf);
 
     // Show pulse on LCD and LED
     if ((pktCount / 4) % 5 == 0) {

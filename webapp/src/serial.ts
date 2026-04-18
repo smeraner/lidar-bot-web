@@ -21,6 +21,8 @@ export class SerialBridge implements IBridgeTransport {
   private _isConnected: boolean = false;
   private _robotStatus: 'connected' | 'disconnected' | 'searching' = 'disconnected';
   private reader: ReadableStreamDefaultReader<string> | null = null;
+  private abortController: AbortController | null = null;
+  private readLoopPromise: Promise<void> | null = null;
   private lidarCallback: ((points: { angle: number; distance: number }[]) => void) | null = null;
   private imuCallback: ((pitch: number, roll: number, yaw: number) => void) | null = null;
   private robotStatusCallback:
@@ -45,16 +47,23 @@ export class SerialBridge implements IBridgeTransport {
         throw new Error('Serial port is not writable/readable');
       }
 
+      this.abortController = new AbortController();
+      const signal = this.abortController.signal;
+
       const textEncoder = new TextEncoderStream();
-      textEncoder.readable.pipeTo(port.writable);
+      textEncoder.readable.pipeTo(port.writable, { signal }).catch((e) => {
+        if (e.name !== 'AbortError') console.error('Serial write pipe error', e);
+      });
       this.writer = textEncoder.writable.getWriter();
 
       const textDecoder = new TextDecoderStream();
-      port.readable.pipeTo(textDecoder.writable as any);
+      port.readable.pipeTo(textDecoder.writable as any, { signal }).catch((e) => {
+        if (e.name !== 'AbortError') console.error('Serial read pipe error', e);
+      });
       this.reader = textDecoder.readable.getReader();
 
       this._isConnected = true;
-      this.readLoop();
+      this.readLoopPromise = this.readLoop();
 
       // Request initial status
       await this.requestStatus();
@@ -85,27 +94,29 @@ export class SerialBridge implements IBridgeTransport {
       try {
         const { value, done } = await this.reader.read();
         if (done) break;
-        buffer += value;
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          this.handleIncomingLine(line.trim());
+        if (value) {
+          buffer += value;
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            this.handleIncomingLine(line.trim());
+          }
         }
-      } catch (e) {
-        console.error('Read error', e);
+      } catch (e: any) {
+        if (e.name !== 'AbortError') {
+          console.error('Read error', e);
+        }
         break;
       }
     }
   }
 
   private handleIncomingLine(line: string) {
-    if (/^lidar:(?:\d+,\d+,?)+$/.test(line)) {
+    if (line.startsWith('lidar:')) {
       const dataStr = line.substring(6);
-      const data = dataStr.endsWith(',')
-        ? dataStr.substring(0, dataStr.length - 1).split(',')
-        : dataStr.split(',');
+      const data = dataStr.split(',');
       const points: { angle: number; distance: number }[] = [];
-      for (let i = 0; i < data.length; i += 2) {
+      for (let i = 0; i < data.length - 1; i += 2) {
         const rawAngle = parseInt(data[i]);
         const distance = parseInt(data[i + 1]);
         if (!isNaN(rawAngle) && !isNaN(distance)) {
@@ -170,20 +181,55 @@ export class SerialBridge implements IBridgeTransport {
   }
 
   async disconnect() {
+    if (!this._isConnected && !this.port) return;
+
     this._isConnected = false;
     this._robotStatus = 'disconnected';
+
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+
+    if (this.readLoopPromise) {
+      try {
+        await this.readLoopPromise;
+      } catch (e) {
+        console.warn('Read loop error during disconnect:', e);
+      }
+      this.readLoopPromise = null;
+    }
+
     if (this.reader) {
-      await this.reader.cancel();
+      try {
+        this.reader.releaseLock();
+      } catch (e) {
+        console.warn('Error releasing reader lock:', e);
+      }
       this.reader = null;
     }
+
     if (this.writer) {
-      await this.writer.close();
+      try {
+        this.writer.releaseLock();
+      } catch (e) {
+        console.warn('Error releasing writer lock:', e);
+      }
       this.writer = null;
     }
+
+    this.abortController = null;
+
     if (this.port) {
-      await this.port.close();
+      try {
+        // Wait a small amount of time for the streams to be released by the browser
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await this.port.close();
+      } catch (e) {
+        console.error('Error closing serial port:', e);
+      }
       this.port = null;
     }
+
     console.log('Disconnected from Serial Bridge');
     if (this.robotStatusCallback) this.robotStatusCallback('disconnected');
   }

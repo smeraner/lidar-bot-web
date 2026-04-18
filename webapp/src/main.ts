@@ -127,22 +127,17 @@ const uiManager = new UIManager(
   getToolbox,
 );
 
-const handleLidarData = (rawPoints: { angle: number; distance: number }[]) => {
-  // Translate Hardware Coordinate System (0=Right) to Web Logical (0=Front) + 7° mount offset
-  const points = rawPoints.map((p) => ({
-    angle: Math.round(p.angle + 97) % 360,
-    distance: p.distance,
-  }));
-
+const handleLidarData = (points: { angle: number; distance: number }[]) => {
   lidarStore.update(points);
+  const distances = lidarStore.getAllDistances();
   if (uiManager.lidarView) {
-    uiManager.lidarView.update(lidarStore.getAllDistances());
+    uiManager.lidarView.update(distances);
   }
   if (uiManager.simulationView) {
-    uiManager.simulationView.setLidarData(lidarStore.getAllDistances());
+    uiManager.simulationView.setLidarData(distances);
   }
   if (worker) {
-    worker.postMessage({ type: 'lidar_update', distances: lidarStore.getAllDistances() });
+    worker.postMessage({ type: 'lidar_update', distances });
   }
 };
 
